@@ -1,2 +1,2 @@
-!projec1/linux-5.15.0/**/*.patch
 project1/linux-5.15.0
+projec1/linux-5.15.0/mm/mmap.c.patch
