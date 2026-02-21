@@ -1,0 +1,10 @@
+3872a3873,3881
+> 
+> /* we gonna try make our own syscall lol
+>  * copy user space array to kernel space
+>  * set all values to 1
+>  * copy back*/
+> long sys_app_helper(void *buffer, int size){
+> 	printk("We are in the sys_app_helper syscall now!");
+> 	return 0;
+> }

@@ -1,2 +1,14 @@
 project1/linux-5.15.0/**
+
+!project1/linux-5.15.0/arch
+!project1/linux-5.15.0/arch/x86
+!project1/linux-5.15.0/arch/x86/entry
+!project1/linux-5.15.0/arch/x86/entry/syscalls
+
+!project1/linux-5.15.0/include
+!project1/linux-5.15.0/include/linux
+
+!project1/linux-5.15.0/mm
 !project1/linux-5.15.0/**/*.patch
+
+
