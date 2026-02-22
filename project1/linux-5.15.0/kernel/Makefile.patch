@@ -1,0 +1,11 @@
+--- kernel/Makefile	2026-02-21 20:16:41.674257357 -0700
++++ kernel/Makefile.old	2026-02-21 20:17:42.791530846 -0700
+@@ -10,7 +10,7 @@
+ 	    extable.o params.o \
+ 	    kthread.o sys_ni.o nsproxy.o \
+ 	    notifier.o ksysfs.o cred.o reboot.o \
+-	    async.o range.o smpboot.o ucount.o regset.o mmap.o
++	    async.o range.o smpboot.o ucount.o regset.o
+ 
+ obj-$(CONFIG_USERMODE_DRIVER) += usermode_driver.o
+ obj-$(CONFIG_MODULES) += kmod.o
