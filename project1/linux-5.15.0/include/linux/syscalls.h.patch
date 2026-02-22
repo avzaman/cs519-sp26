@@ -1,11 +1,8 @@
---- include/linux/syscalls.h.old	2026-02-21 14:21:39.009436293 -0700
-+++ include/linux/syscalls.h	2026-02-21 14:39:04.422027146 -0700
-@@ -1272,6 +1272,8 @@
- 			unsigned long fd, unsigned long pgoff);
- asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
- 
-+asmlinkage long sys_app_helper(void *buffer, int size)
-+
- /*
-  * Not a real system call, but a placeholder for syscalls which are
-  * not implemented -- see kernel/sys_ni.c
+--- include/linux/syscalls.h	2026-02-21 16:58:27.861213330 -0700
++++ include/linux/syscalls.h.old	2026-02-21 14:21:39.009436293 -0700
+@@ -1388,5 +1388,3 @@
+ int __sys_setsockopt(int fd, int level, int optname, char __user *optval,
+ 		int optlen);
+ #endif
+-
+-asmlinkage long sys_app_helper(void __user *ptr,int)
