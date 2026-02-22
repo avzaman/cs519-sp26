@@ -7,7 +7,7 @@
 
 int main(void){
 	//int *buffer = malloc(4*sizeof(int));
-	if(syscall(MY_SYS_CALL_NUM,int, 1,int , 4));
-	free(buffer);
+	if(syscall(MY_SYS_CALL_NUM,1,4));
+	//free(buffer);
 	return 0;
 }

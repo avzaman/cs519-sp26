@@ -1,8 +1,8 @@
---- include/linux/syscalls.h	2026-02-21 16:58:27.861213330 -0700
+--- include/linux/syscalls.h	2026-02-21 18:05:05.734945484 -0700
 +++ include/linux/syscalls.h.old	2026-02-21 14:21:39.009436293 -0700
-@@ -1388,5 +1388,3 @@
+@@ -1387,5 +1387,4 @@
+ 		int __user *optlen);
  int __sys_setsockopt(int fd, int level, int optname, char __user *optval,
  		int optlen);
+-asmlinkage long sys_app_helper(int,int)
  #endif
--
--asmlinkage long sys_app_helper(void __user *ptr,int)
