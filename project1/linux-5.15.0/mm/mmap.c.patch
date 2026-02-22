@@ -1,4 +1,4 @@
---- mm/mmap.c	2026-02-21 19:32:34.532740714 -0700
+--- mm/mmap.c	2026-02-21 22:42:33.765040369 -0700
 +++ mm/mmap.c.old	2026-02-21 14:28:17.265305083 -0700
 @@ -3870,12 +3870,3 @@
  	return 0;
@@ -10,6 +10,6 @@
 - * set all values to 1
 - * copy back*/
 -SYSCALL_DEFINE2(app_helper,int, help, int, size){
--	printk("We are in the sys_app_helper syscall now!");
+-	printk(KERN_ALERT "We are in the app_helper syscall now!!!!!");
 -	return 0;
 -}

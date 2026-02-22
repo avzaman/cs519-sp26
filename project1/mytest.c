@@ -7,7 +7,7 @@
 
 int main(void){
 	//int *buffer = malloc(4*sizeof(int));
-	app_helper(1,4);
+	syscall(449,1,4);
 	//free(buffer);
 	return 0;
 }

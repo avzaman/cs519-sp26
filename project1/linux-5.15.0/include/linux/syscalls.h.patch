@@ -1,10 +1,10 @@
---- include/linux/syscalls.h	2026-02-21 19:26:25.177480424 -0700
+--- include/linux/syscalls.h	2026-02-21 22:44:41.043324530 -0700
 +++ include/linux/syscalls.h.old	2026-02-21 14:21:39.009436293 -0700
 @@ -1272,8 +1272,6 @@
  			unsigned long fd, unsigned long pgoff);
  asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
  
--asmlinkage long sys_app_helper(int test,int size)
+-asmlinkage long sys_app_helper(int test,int size);
 -
  /*
   * Not a real system call, but a placeholder for syscalls which are
