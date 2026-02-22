@@ -1,10 +1,15 @@
-3873,3881d3872
-< 
-< /* we gonna try make our own syscall lol
-<  * copy user space array to kernel space
-<  * set all values to 1
-<  * copy back*/
-< SYSCALL_DEFINE2(sys_app_helper,int, help, int, size){
-< 	printk("We are in the sys_app_helper syscall now!");
-< 	return 0;
-< }
+--- mm/mmap.c	2026-02-21 19:32:34.532740714 -0700
++++ mm/mmap.c.old	2026-02-21 14:28:17.265305083 -0700
+@@ -3870,12 +3870,3 @@
+ 	return 0;
+ }
+ subsys_initcall(init_reserve_notifier);
+-
+-/* we gonna try make our own syscall lol
+- * copy user space array to kernel space
+- * set all values to 1
+- * copy back*/
+-SYSCALL_DEFINE2(app_helper,int, help, int, size){
+-	printk("We are in the sys_app_helper syscall now!");
+-	return 0;
+-}
