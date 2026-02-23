@@ -1,0 +1,7 @@
+--- arch/x86/entry/syscalls/syscall_32.tbl	2026-02-23 09:29:35.984662455 -0700
++++ arch/x86/entry/syscalls/syscall_32.tbl.old	2026-02-23 12:25:46.578388843 -0700
+@@ -453,4 +453,3 @@
+ 446	i386	landlock_restrict_self	sys_landlock_restrict_self
+ 447	i386	memfd_secret		sys_memfd_secret
+ 448	i386	process_mrelease	sys_process_mrelease
+-449	i386	app_helper		sys_app_helper

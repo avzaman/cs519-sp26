@@ -1,10 +1,11 @@
---- arch/x86/entry/syscalls/syscall_64.tbl	2026-02-21 19:00:43.203243607 -0700
-+++ arch/x86/entry/syscalls/syscall_64.tbl.old	2026-02-21 14:24:03.664309119 -0700
-@@ -370,7 +370,6 @@
+--- arch/x86/entry/syscalls/syscall_64.tbl	2026-02-23 09:13:31.174528834 -0700
++++ arch/x86/entry/syscalls/syscall_64.tbl.old	2026-02-23 12:24:23.407182482 -0700
+@@ -370,7 +370,7 @@
  446	common	landlock_restrict_self	sys_landlock_restrict_self
  447	common	memfd_secret		sys_memfd_secret
  448	common	process_mrelease	sys_process_mrelease
--449	common  app_helper		sys_app_helper
+-449	common	app_helper		sys_app_helper
++
  #
  # Due to a historical design error, certain syscalls are numbered differently
  # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
