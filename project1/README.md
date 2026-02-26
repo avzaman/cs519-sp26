@@ -1,34 +1,34 @@
 some helpful links for part one here:
-	- general writing a syscall into the kernel code a syscall
-		- [link](https://www.youtube.com/watch?v=Kn6D7sH7Fts&t=34s)
-		- [link](https://www.youtube.com/watch?v=5rr_VoQCOgE)
-		- [link](https://stackoverflow.com/questions/53735886/how-to-pass-parameters-to-linux-system-call)
-	- compiling the linux kernel (eventually found a combination of file edits that script just works, run em as sudo)
-		- [link](https://itsfoss.com/compile-linux-kernel/)
-		- [link](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
-		- [link](https://www.josehu.com/technical/2021/01/02/linux-kernel-build-debug.html)
-	- troubleshooting getting a syscall installed
-		- make dh command not found -> install dh-make
-			- [link](https://askubuntu.com/questions/450269/make-dh-command-not-found)
-		- make mrproper thing? endure no .config is in root kernel directory
-			- [link](https://askubuntu.com/questions/596120/cant-build-ubuntu-kernel-why-does-make-mrproper-get-rid-of-debian-directory)
-		- check architecture: dpkg --print-architecture
-			- [link](https://unix.stackexchange.com/questions/12453/how-to-determine-linux-kernel-architecture)
-		- i8042 error can be ignored
-			- [link](https://www.ibm.com/support/pages/i8042-error-message-during-linux-start-servers)
-		- printk priority us pr_emerg or KERN_EMERG param
-			- [link](https://www.kernel.org/doc/html/latest/core-api/printk-basics.html)
-		- pipe standard and error output to tee for debugging script cuz errors scroll by too fast
-			- ../script |& tee -a ../script.log
-			- [link](https://www.kernel.org/doc/html/latest/core-api/printk-basics.html)
-		- list kernels available in grub without having to reboot
-			- awk -F\' '$1=="menuentry " || $1=="submenu " {print i++ " : " $2}; /\tmenuentry / {print "\t" i-1">"j++ " : " $2};' /boot/grub/grub.cfg
-	- understanding copy user then back sys call implement
-		- strace tool useful for seeing what syscalls were called by process
-			- [link](https://www.youtube.com/watch?v=JdVn3RMLU_Q)
-		- for loops giving compile error/warning, instantiate i before loop start:
-			- [link](https://stackoverflow.com/questions/29338206/error-for-loop-initial-declarations-are-only-allowed-in-c99-mode)
-		- ISO C90 forbids mixed declarations and code in C error: declare all variables at start of function
-			- [link](https://stackoverflow.com/questions/13291353/iso-c90-forbids-mixed-declarations-and-code-in-c)
-		- usage of copy to/from user:
-			- [link](https://stackoverflow.com/questions/1836585/proper-way-to-use-copy-to-user)
+- general writing a syscall into the kernel code a syscall
+- - [link](https://www.youtube.com/watch?v=Kn6D7sH7Fts&t=34s)
+- - [link](https://www.youtube.com/watch?v=5rr_VoQCOgE)
+- -  [link](https://stackoverflow.com/questions/53735886/how-to-pass-parameters-to-linux-system-call)
+- compiling the linux kernel (eventually found a combination of file edits that script just works, run em as sudo)
+- - [link](https://itsfoss.com/compile-linux-kernel/)
+- - [link](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
+- - [link](https://www.josehu.com/technical/2021/01/02/linux-kernel-build-debug.html)
+- troubleshooting getting a syscall installed
+- - make dh command not found -> install dh-make
+- - - [link](https://askubuntu.com/questions/450269/make-dh-command-not-found)
+- - make mrproper thing? endure no .config is in root kernel directory
+- - - [link](https://askubuntu.com/questions/596120/cant-build-ubuntu-kernel-why-does-make-mrproper-get-rid-of-debian-directory)
+- - check architecture: dpkg --print-architecture
+- - - [link](https://unix.stackexchange.com/questions/12453/how-to-determine-linux-kernel-architecture)
+- - i8042 error can be ignored
+- - - [link](https://www.ibm.com/support/pages/i8042-error-message-during-linux-start-servers)
+- - printk priority us pr_emerg or KERN_EMERG param
+- - - [link](https://www.kernel.org/doc/html/latest/core-api/printk-basics.html)
+- - pipe standard and error output to tee for debugging script cuz errors scroll by too fast
+- - ../script |& tee -a ../script.log
+- - - [link](https://www.kernel.org/doc/html/latest/core-api/printk-basics.html)
+- - list kernels available in grub without having to reboot
+- - - awk -F\' '$1=="menuentry " || $1=="submenu " {print i++ " : " $2}; /\tmenuentry / {print "\t" i-1">"j++ " : " $2};' /boot/grub/grub.cfg
+- understanding copy user then back sys call implement
+- - strace tool useful for seeing what syscalls were called by process
+- - - [link](https://www.youtube.com/watch?v=JdVn3RMLU_Q)
+- - for loops giving compile error/warning, instantiate i before loop start:
+- - - [link](https://stackoverflow.com/questions/29338206/error-for-loop-initial-declarations-are-only-allowed-in-c99-mode)
+- - ISO C90 forbids mixed declarations and code in C error: declare all variables at start of function
+- - - [link](https://stackoverflow.com/questions/13291353/iso-c90-forbids-mixed-declarations-and-code-in-c)
+- - usage of copy to/from user:
+- - - [link](https://stackoverflow.com/questions/1836585/proper-way-to-use-copy-to-user)
