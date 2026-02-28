@@ -1,6 +1,6 @@
 some helpful links for part one here:
 - general writing a syscall into the kernel code a syscall
- - [link](https://www.youtube.com/watch?v=Kn6D7sH7Fts&t=34s)
+  - [link](https://www.youtube.com/watch?v=Kn6D7sH7Fts&t=34s)
  - [link](https://www.youtube.com/watch?v=5rr_VoQCOgE)
  -  [link](https://stackoverflow.com/questions/53735886/how-to-pass-parameters-to-linux-system-call)
 - compiling the linux kernel (eventually found a combination of file edits that script just works, run em as sudo)
