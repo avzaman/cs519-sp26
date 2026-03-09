@@ -1,6 +1,8 @@
 /* CS 519, Spring 2025: Project 1 - Part 2
  * IPC using pipes to perform matrix multiplication.
  * Feel free to extend or change any code or functions below.
+ *
+ * Got it working for m = 836 but then seg fault
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,10 +14,15 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#include <sys/wait.h>
+#include <limits.h>
+
 //Add all your global variables and definitions here.
 #define MATRIX_SIZE 1000
 #define RANDOM_MAXIMUM 10
 #define DEBUG_SWITCH 1
+#define DEBUG_SWITCH2 1
+
 
 void semaphore_init(int sem_id, int sem_num, int init_val)
 {
@@ -71,22 +78,40 @@ void print_stats(int matrix_size, int num_processes, int verified, double elapse
     printf("Total runtime: %.6f seconds\n", elapsed);
 }
 
-void printMatrix(int m, int M[m][m]){
-	printf("Printing Matrix:\n");
+void printMatrix(char name, int m, int *M){
+	printf("Printing Matrix %c:\n",name);
 	for(int i = 0; i < m; i++){
 		for(int j = 0; j < m; j++){
-			printf("%4d ",M[i][j]);
+			printf("%4d ",M[i*m+j]);
 		}
 		printf("\n");
 	}
 }
 
-int vector_mult(int m,int col,int u[m],int B[m][m]){
+/* Calculate the vector mults for a row in A across all columns in B*/
+void vector_mult(int m,int row,int *A,int *B,int *res){	
+	if(DEBUG_SWITCH){printf("Multing row %d \n", row);}
+
+	for(int i = 0; i < m; i++){
+		res[i] = 0;
+		for(int j = 0; j < m; j++){
+			res[i] += A[row*m+j]*B[j*m+i];
+		}
+	}
+}
+
+int verify(int m, int* A, int* B, int* C){
 	int sum = 0;
 	for(int i = 0; i < m; i++){
-		sum += u[i]*B[i][col];
+		for(int j = 0; j < m; j++){
+			sum = 0;
+			for(int k = 0; k < m; k++){
+				sum += A[i*m+k]*B[k*m+j];
+			}
+			if(sum!=C[i*m+j]){return 0;}
+		}
 	}
-	return sum;
+	return 1;
 }
 
 int main(int argc, char const *argv[])
@@ -102,65 +127,108 @@ int main(int argc, char const *argv[])
 	}
 
 	// make two matrices to multiply together
-	int A[m][m], B[m][m];
+	int *A = malloc(sizeof(int)*m*m); 
+	int *B = malloc(sizeof(int)*m*m);
 	for(int i = 0; i < m; i++){
 		for(int j = 0; j < m; j++){
-			A[i][j] = rand()%RANDOM_MAXIMUM;
-			B[i][j] = rand()%RANDOM_MAXIMUM;
+			A[i*m+j] = rand()%RANDOM_MAXIMUM;
+			B[i*m+j] = rand()%RANDOM_MAXIMUM;
 		}
 	}
 
 	if(DEBUG_SWITCH){
-		printMatrix(m,A);
-		printMatrix(m,B);
+		printMatrix('A',m,A);
+		printMatrix('B',m,B);
 	}
 
-	// initialize result matrix, create pipe, fork() for each row of A column of B, 
-	// child calculates, waits for semaphore, writes (int i, int j, int result) to pipe up aquiring lock
-	int C[m][m]; // result matrix
+	// initialize result matrix, create pipe, fork() for each row of A, 
+	// child calculates, waits for semaphore, writes (int i, int[m] result) to pipe after aquiring lock
 	pid_t procID; // for deteecting if in parent or child prcoess
 	int pipefd[2]; // init pipe array then make it
 	pipe(pipefd);
-	
 	int semaphoreID = semget(IPC_PRIVATE, 1, 0666 | IPC_CREAT);
 	semaphore_init(semaphoreID,0,1);
-	
-	int res = 0;
-	
-	gettimeofday(&begin, NULL);
+	if(DEBUG_SWITCH2){printf("Maximum Pipe buffer size: %d \n", PIPE_BUF);}	
+
+	gettimeofday(&begin, NULL); // start timer!!!
 	for(int i = 0; i < m; i++){
-		for(int j = 0; j < m; j++){
-			num_procs++;
-			procID = fork();
-			if(procID == 0){
-				res = vector_mult(m,j,A[i],B);
-				semaphore_reserve(semaphoreID,1); // critical section, writing to pipe
-				write(pipefd[1], &i, sizeof(int));
-				write(pipefd[1], &j, sizeof(int));
-				write(pipefd[1], &res, sizeof(int));
-				semaphore_release(semaphoreID,1);
-				exit(0);
-			}else if(procID < 0){
-				printf("ERROR creating FORK");
+		num_procs++;
+		procID = fork();
+		if(procID == 0){
+			int *res = malloc(sizeof(int)*m);
+			vector_mult(m,i,A,B,res);
+			if(DEBUG_SWITCH){printf("ROW %d, Finished multing, aquiring lock...\n",i);}
+			semaphore_reserve(semaphoreID,1); // critical section, writing to pipe
+			if(DEBUG_SWITCH){printf("ROW %d, aquired lock! writing row num...\n",i);}
+			write(pipefd[1], &i, sizeof(int));
+			if(DEBUG_SWITCH){printf("ROW %d, wrote row num! writing row vals from %d to %d...\n",i,res[0],res[m-1]);}
+			
+			if(m*sizeof(int)<PIPE_BUF){
+				write(pipefd[1], res, sizeof(int)*m);
+			}else{
+				if(DEBUG_SWITCH){printf("ROW %d m*sizeof(int)= %ld\n",i,m*sizeof(int));}
+				int k;
+				for(int k = 0; k+PIPE_BUF < m*sizeof(int); k+=PIPE_BUF){
+					if(DEBUG_SWITCH){printf("ROW %d Looping writing to pipe k = %d\n",i,k);}
+					write(pipefd[1],&res[k/sizeof(int)], PIPE_BUF);
+				}
+				if(DEBUG_SWITCH){printf("ROW %d writing last bytes to pipe...\n",i);}
+				write(pipefd[1],&res[m-(m-(k/sizeof(int)))],m*sizeof(int)-k);
 			}
+			
+			if(DEBUG_SWITCH){printf("ROW %d, wrote row vals! releasing lock...\n",i);}
+			semaphore_release(semaphoreID,1); // end critical section release pipe
+			if(DEBUG_SWITCH){printf("ROW %d, lock released!!\n",i);}
+			free(res);
+			free(A);//free matrices copied by subprocess
+			free(B);
+			exit(0);
+		}else if(procID < 0){
+			printf("ERROR creating FORK");
+			return -1;
 		}
 	}
+
 	
-	// parent process reads pipe 12 bytes at a time format i, j, result
-	int readI, readJ, readAns;
-	for(int i = 0; i < m*m; i++){
+
+	if(DEBUG_SWITCH){printf("\n\nPARENT BEGIN READING PIPE\n\n");}
+	int readI, readAns[m];
+	int *C = malloc(sizeof(int)*m*m);
+
+	for(int i = 0; i < m; i++){
+		if(DEBUG_SWITCH){printf("READ %d, attempting read...\n",i);}
 		read(pipefd[0], &readI, sizeof(int));
-		read(pipefd[0], &readJ, sizeof(int));
-		read(pipefd[0], &readAns, sizeof(int));
-		C[readI][readJ] = readAns;
+		if(DEBUG_SWITCH){printf("READ %d, read row %d! reading vals...\n",i,readI);}
+		
+		if(m*sizeof(int)<PIPE_BUF){
+			read(pipefd[0],readAns,sizeof(int)*m);
+		}else{
+			int c;
+			for(c = 0; c+PIPE_BUF < m*sizeof(int); c+=PIPE_BUF){
+				read(pipefd[0],&readAns[c/sizeof(int)],PIPE_BUF);
+			}
+			read(pipefd[0],&readAns[m-(m-(c/sizeof(int)))],m*sizeof(int)-c);
+		}
+		
+		if(DEBUG_SWITCH){printf("READ %d, vals read! writing to out C from %d to %d...\n",i,readAns[0],readAns[m-1]);}
+		for(int j = 0; j < m; j++){
+			C[readI*m+j] = readAns[j];
+		}
+		if(DEBUG_SWITCH){printf("READ %d, wrote row %d vals!\n",i,readI);}
 	}
+	gettimeofday(&end,NULL); // end timer!!!
+	elapsed = getdeltatimeofday(&begin,&end); // total time is just multithreaded matmul
+
+	if(DEBUG_SWITCH){printMatrix('C',m,C);}
 	
-	gettimeofday(&end,NULL);
-	elapsed = getdeltatimeofday(&begin,&end);
-
-	if(DEBUG_SWITCH){printMatrix(m,C);}
-
 	/* Your completed code must uncomment, and call the below function.*/ 
+	verified = verify(m,A,B,C);
+	free(A);
+	free(B);
+	free(C);
+
+
 	print_stats(m, num_procs, verified, elapsed);
+	
 	return 0;
 }
