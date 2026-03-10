@@ -20,8 +20,8 @@
 //Add all your global variables and definitions here.
 #define MATRIX_SIZE 1000
 #define RANDOM_MAXIMUM 10
-#define DEBUG_SWITCH 1
-#define DEBUG_SWITCH2 1
+#define DEBUG_SWITCH 0
+#define DEBUG_SWITCH2 0
 
 
 void semaphore_init(int sem_id, int sem_num, int init_val)
@@ -168,7 +168,7 @@ int main(int argc, char const *argv[])
 			}else{
 				if(DEBUG_SWITCH){printf("ROW %d m*sizeof(int)= %ld\n",i,m*sizeof(int));}
 				int k;
-				for(int k = 0; k+PIPE_BUF < m*sizeof(int); k+=PIPE_BUF){
+				for(k = 0; k+PIPE_BUF < m*sizeof(int); k+=PIPE_BUF){
 					if(DEBUG_SWITCH){printf("ROW %d Looping writing to pipe k = %d\n",i,k);}
 					write(pipefd[1],&res[k/sizeof(int)], PIPE_BUF);
 				}
