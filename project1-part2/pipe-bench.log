@@ -1,0 +1,182 @@
+Running on cores 0-1
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 7403.413260 seconds
+Non-parallel verification took: 10245.725591
+Running on cores 0-3
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 3896.915067 seconds
+Non-parallel verification took: 10171.849274
+Running on cores 0-5
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 3124.133659 seconds
+Non-parallel verification took: 10230.590567
+Running on cores 0-7
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4083.193369 seconds
+Non-parallel verification took: 10257.731399
+Running on cores 0-9
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 3210.492924 seconds
+Non-parallel verification took: 10198.775218
+Running on cores 0-11
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4199.540606 seconds
+Non-parallel verification took: 10238.725599
+Running on cores 0-13
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4321.748720 seconds
+Non-parallel verification took: 10220.480834
+Running on cores 0-15
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 6444.636798 seconds
+Non-parallel verification took: 10246.988623
+Running on cores 0-1
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 3.483899 seconds
+Non-parallel verification took: 4.180405
+Running on cores 0-3
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.848037 seconds
+Non-parallel verification took: 4.267438
+Running on cores 0-5
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.311099 seconds
+Non-parallel verification took: 4.213715
+Running on cores 0-7
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.036156 seconds
+Non-parallel verification took: 4.227370
+Running on cores 0-9
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.011212 seconds
+Non-parallel verification took: 4.177098
+Running on cores 0-11
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.029947 seconds
+Non-parallel verification took: 4.241804
+Running on cores 0-13
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.077203 seconds
+Non-parallel verification took: 4.189487
+Running on cores 0-15
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.075895 seconds
+Non-parallel verification took: 4.183810
+Running on cores 0-1
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 32.667384 seconds
+Non-parallel verification took: 47.541599
+Running on cores 0-3
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 17.105104 seconds
+Non-parallel verification took: 48.004423
+Running on cores 0-5
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 12.090040 seconds
+Non-parallel verification took: 48.135677
+Running on cores 0-7
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 9.628575 seconds
+Non-parallel verification took: 48.433272
+Running on cores 0-9
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 9.876762 seconds
+Non-parallel verification took: 47.471912
+Running on cores 0-11
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 10.285909 seconds
+Non-parallel verification took: 47.231583
+Running on cores 0-13
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 10.868289 seconds
+Non-parallel verification took: 48.051420
+Running on cores 0-15
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 11.537531 seconds
+Non-parallel verification took: 47.822869
+Running on cores 0-1
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 159.858954 seconds
+Non-parallel verification took: 229.228334
+Running on cores 0-3
+Running on cores 0-1
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 417.132630 seconds
+Non-parallel verification took: 553.097170
+Running on cores 0-3
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 216.145510 seconds
+Non-parallel verification took: 555.233973
+Running on cores 0-5
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 150.808096 seconds
+Non-parallel verification took: 557.451898
+Running on cores 0-7
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 115.764349 seconds
+Non-parallel verification took: 562.360193
+Running on cores 0-9
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 118.903485 seconds
+Non-parallel verification took: 558.671759
+Running on cores 0-11

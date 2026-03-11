@@ -222,13 +222,18 @@ int main(int argc, char const *argv[])
 	if(DEBUG_SWITCH){printMatrix('C',m,C);}
 	
 	/* Your completed code must uncomment, and call the below function.*/ 
+	
+	gettimeofday(&begin,NULL);
 	verified = verify(m,A,B,C);
+	gettimeofday(&end,NULL);
+
 	free(A);
 	free(B);
 	free(C);
 
 
 	print_stats(m, num_procs, verified, elapsed);
-	
+	printf("Non-parallel verification took: %f\n",getdeltatimeofday(&begin,&end));
+
 	return 0;
 }

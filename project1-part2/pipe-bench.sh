@@ -1,8 +1,9 @@
-!#/bin/bash
+#/bin/bash
 
-$m = [1000 2000 3000 4000 5000 6000 7000 8000 9000 10000]
+declare -a m=(1 3 5 7 9 11 13 15)
 
-for n in m
+for n in "${m[@]}"
 do
-	./IPC-pipe | tee pipe-bench.out
+	echo "Running on cores 0-$n" | tee -a pipe-bench.log
+	taskset --cpu-list 0-"$n" ./IPC-pipe 4000 | tee -a pipe-bench.log
 done
