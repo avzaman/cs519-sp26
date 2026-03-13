@@ -180,3 +180,34 @@ Verification: PASS
 Total runtime: 118.903485 seconds
 Non-parallel verification took: 558.671759
 Running on cores 0-11
+Running on cores 0-1
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 7450.556874 seconds
+Non-parallel verification took: 10217.666177
+Running on cores 0-3
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4442.945539 seconds
+Non-parallel verification took: 10311.960443
+Running on cores 0-5
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4362.119612 seconds
+Non-parallel verification took: 10230.362028
+Running on cores 0-7
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4422.392745 seconds
+Non-parallel verification took: 10289.724185
+Running on cores 0-9
+Input size: 10000 x 10000
+Number of processes: 10000
+Verification: PASS
+Total runtime: 4479.751575 seconds
+Non-parallel verification took: 10284.033092
+Running on cores 0-11

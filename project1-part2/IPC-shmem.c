@@ -20,8 +20,8 @@
 #define MATRIX_SIZE 1000
 
 #define RANDOM_MAXIMUM 10
-#define DEBUG_SWITCH 1
-#define DEBUG_SWITCH2 1
+#define DEBUG_SWITCH 0
+#define DEBUG_SWITCH2 0
 
 void semaphore_init(int sem_id, int sem_num, int init_val)
 {
