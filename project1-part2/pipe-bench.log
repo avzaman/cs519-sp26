@@ -1,0 +1,360 @@
+Size 1000 Running on cores 0-1
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 3.526139 seconds
+Size 1000 Running on cores 0-3
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.859757 seconds
+Size 1000 Running on cores 0-5
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.273470 seconds
+Size 1000 Running on cores 0-7
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.024127 seconds
+Size 1000 Running on cores 0-9
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.018026 seconds
+Size 1000 Running on cores 0-11
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.033819 seconds
+Size 1000 Running on cores 0-13
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 0.991931 seconds
+Size 1000 Running on cores 0-15
+Input size: 1000 x 1000
+Number of processes: 1000
+Verification: PASS
+Total runtime: 1.001317 seconds
+Size 2000 Running on cores 0-1
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 32.960810 seconds
+Size 2000 Running on cores 0-3
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 17.121158 seconds
+Size 2000 Running on cores 0-5
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 11.994642 seconds
+Size 2000 Running on cores 0-7
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 9.562905 seconds
+Size 2000 Running on cores 0-9
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 9.935349 seconds
+Size 2000 Running on cores 0-11
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 10.386328 seconds
+Size 2000 Running on cores 0-13
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 10.873962 seconds
+Size 2000 Running on cores 0-15
+Input size: 2000 x 2000
+Number of processes: 2000
+Verification: PASS
+Total runtime: 11.539055 seconds
+Size 3000 Running on cores 0-1
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 159.786459 seconds
+Size 3000 Running on cores 0-3
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 82.251482 seconds
+Size 3000 Running on cores 0-5
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 57.493096 seconds
+Size 3000 Running on cores 0-7
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 44.632833 seconds
+Size 3000 Running on cores 0-9
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 45.713318 seconds
+Size 3000 Running on cores 0-11
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 46.822018 seconds
+Size 3000 Running on cores 0-13
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 47.715840 seconds
+Size 3000 Running on cores 0-15
+Input size: 3000 x 3000
+Number of processes: 3000
+Verification: PASS
+Total runtime: 48.923198 seconds
+Size 4000 Running on cores 0-1
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 419.931969 seconds
+Size 4000 Running on cores 0-3
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 214.976218 seconds
+Size 4000 Running on cores 0-5
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 151.628257 seconds
+Size 4000 Running on cores 0-7
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 115.768572 seconds
+Size 4000 Running on cores 0-9
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 120.592563 seconds
+Size 4000 Running on cores 0-11
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 120.566554 seconds
+Size 4000 Running on cores 0-13
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 124.189524 seconds
+Size 4000 Running on cores 0-15
+Input size: 4000 x 4000
+Number of processes: 4000
+Verification: PASS
+Total runtime: 129.937141 seconds
+Size 5000 Running on cores 0-1
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 905.362758 seconds
+Size 5000 Running on cores 0-3
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 463.649703 seconds
+Size 5000 Running on cores 0-5
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 322.674956 seconds
+Size 5000 Running on cores 0-7
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 249.936437 seconds
+Size 5000 Running on cores 0-9
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 256.644813 seconds
+Size 5000 Running on cores 0-11
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 271.454965 seconds
+Size 5000 Running on cores 0-13
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 294.220569 seconds
+Size 5000 Running on cores 0-15
+Input size: 5000 x 5000
+Number of processes: 5000
+Verification: PASS
+Total runtime: 336.300291 seconds
+Size 6000 Running on cores 0-1
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 1481.271719 seconds
+Size 6000 Running on cores 0-3
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 768.014472 seconds
+Size 6000 Running on cores 0-5
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 538.709069 seconds
+Size 6000 Running on cores 0-7
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 439.060406 seconds
+Size 6000 Running on cores 0-9
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 462.882742 seconds
+Size 6000 Running on cores 0-11
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 534.132796 seconds
+Size 6000 Running on cores 0-13
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 557.990914 seconds
+Size 6000 Running on cores 0-15
+Input size: 6000 x 6000
+Number of processes: 6000
+Verification: PASS
+Total runtime: 869.805487 seconds
+Size 7000 Running on cores 0-1
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 2544.657988 seconds
+Size 7000 Running on cores 0-3
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 1333.793395 seconds
+Size 7000 Running on cores 0-5
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 968.513399 seconds
+Size 7000 Running on cores 0-7
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 871.115939 seconds
+Size 7000 Running on cores 0-9
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 912.786367 seconds
+Size 7000 Running on cores 0-11
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 1029.103725 seconds
+Size 7000 Running on cores 0-13
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 1152.702095 seconds
+Size 7000 Running on cores 0-15
+Input size: 7000 x 7000
+Number of processes: 7000
+Verification: PASS
+Total runtime: 1787.179495 seconds
+Size 8000 Running on cores 0-1
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 3961.515034 seconds
+Size 8000 Running on cores 0-3
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 2321.725307 seconds
+Size 8000 Running on cores 0-5
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 1758.461742 seconds
+Size 8000 Running on cores 0-7
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 1792.761698 seconds
+Size 8000 Running on cores 0-9
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 1894.337575 seconds
+Size 8000 Running on cores 0-11
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 1773.865151 seconds
+Size 8000 Running on cores 0-13
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 2153.469946 seconds
+Size 8000 Running on cores 0-15
+Input size: 8000 x 8000
+Number of processes: 8000
+Verification: PASS
+Total runtime: 2625.779837 seconds
+Size 9000 Running on cores 0-1
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 5677.147575 seconds
+Size 9000 Running on cores 0-3
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 3068.772557 seconds
+Size 9000 Running on cores 0-5
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 2246.572987 seconds
+Size 9000 Running on cores 0-7
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 2733.475218 seconds
+Size 9000 Running on cores 0-9
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 2636.582048 seconds
+Size 9000 Running on cores 0-11
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 2873.018310 seconds
+Size 9000 Running on cores 0-13
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 3112.493957 seconds
+Size 9000 Running on cores 0-15
+Input size: 9000 x 9000
+Number of processes: 9000
+Verification: PASS
+Total runtime: 4510.266682 seconds
