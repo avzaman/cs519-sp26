@@ -201,7 +201,7 @@ int main(int argc, char const *argv[])
 	gettimeofday(&begin,NULL);
 	verified = verify(m,A,B,D);
 	gettimeofday(&end,NULL);
-	//verified = 1;
+
 	
 	free(D);
 	shmdt(A);

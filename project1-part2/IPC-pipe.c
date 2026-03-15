@@ -223,10 +223,9 @@ int main(int argc, char const *argv[])
 	
 	/* Your completed code must uncomment, and call the below function.*/ 
 	
-	//gettimeofday(&begin,NULL);
-	//verified = verify(m,A,B,C);
-	//gettimeofday(&end,NULL);
-	verified = 1;
+	gettimeofday(&begin,NULL);
+	verified = verify(m,A,B,C);
+	gettimeofday(&end,NULL);
 
 	free(A);
 	free(B);

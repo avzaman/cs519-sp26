@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare -a c=(1 3 5 7 9 11 13 15)
+declare -a c=(15)
 
 mkdir -p pipe-perf-data
 
