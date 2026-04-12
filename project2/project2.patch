@@ -662,32 +662,6 @@
  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
  	mm->pmd_huge_pte = NULL;
  #endif
---- mm/mmap.c.old	2026-04-12 02:42:30.754921442 +0000
-+++ mm/mmap.c	2026-04-12 03:21:21.022763665 +0000
-@@ -3193,6 +3193,14 @@
- /* Release all mmaps. */
- void exit_mmap(struct mm_struct *mm)
- {
-+	/* HANDLE EXTENTS */
-+	if (mm->extent_tracking_enabled) {
-+        pr_info("extent: process %d had %d extents\n",
-+                current->pid,
-+                extent_rb_count(&mm->extent_pt));
-+        extent_rb_destroy(&mm->extent_pt);
-+    	}
-+	/*  HANDLE EXTENTS */
- 	struct mmu_gather tlb;
- 	struct vm_area_struct *vma;
- 	unsigned long nr_accounted = 0;
-@@ -3870,3 +3878,8 @@
- 	return 0;
- }
- subsys_initcall(init_reserve_notifier);
-+
-+SYSCALL_DEFINE0(use_extents){
-+    current->mm->extent_tracking_enabled = 1;
-+    return 0;
-+}
 --- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
 +++ include/linux/syscalls.h	2026-04-12 03:23:46.568807081 +0000
 @@ -1279,6 +1279,8 @@
