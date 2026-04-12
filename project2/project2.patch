@@ -100,7 +100,7 @@
  
  	/*
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-12 17:44:44.877175495 +0000
++++ mm/memory.c	2026-04-12 17:49:45.965807440 +0000
 @@ -1355,6 +1355,10 @@
  			struct page *page;
  
@@ -395,7 +395,9 @@
 +//remove the first or last address in an extent
 +//which occurs because a page on either end is being freed
 +int extent_trim(extent* ex, unsigned long pte){
-+
++	//declares at top of func
++	struct extent_page *curr_page;
++	struct extent_page *temp;		//to prevent concurrent modification error
 +	//run the necessary checks
 +	if(!extent_pte_is_start_or_end(ex, pte)){
 +		//pte is non-contiguous
@@ -417,8 +419,7 @@
 +	//&ex->extent_pagelist is the head of the list to be searched in
 +	//node is what the node representation in each linked list element is called
 +
-+	struct extent_page *curr_page;
-+	struct extent_page *temp;		//to prevent concurrent modification error
++
 +	
 +	list_for_each_entry_safe(curr_page, temp, &ex->extent_pagelist, node) {
 +		if (curr_page->page == pte){
@@ -557,8 +558,7 @@
 +			goto out;
 +		}
 + 
-+		struct extent_node *en = kmalloc(sizeof(struct extent_node),
-+						 GFP_ATOMIC);
++		en = kmalloc(sizeof(struct extent_node),GFP_ATOMIC);
 +		if (!en) {
 +			kfree(ex);
 +			ret = -ENOMEM;
