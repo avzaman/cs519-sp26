@@ -145,7 +145,7 @@
  
  			page = vm_normal_page(vma, addr, ptent);
 +			/* -------------------- EXTENTS HANDELER --------*/
-+			if (currecnt->mm && current->mm->use_extents && page)
++			if (current->mm && current->mm->use_extents && page)
 +    				extent_rb_remove_page(&current->mm->extent_pt, page_to_pfn(page));
 +			/* -------------------- END EXTENS HANDLING ------*/
  			if (unlikely(details) && page) {

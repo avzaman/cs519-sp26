@@ -20,7 +20,7 @@ make menuconfig
 touch REPORTING-BUGS
 sudo make clean -j
 sudo make prepare
-sudo make -j$PROC
+sudo make -j$PROC 2>&1 | tee build.log
 sudo make modules -j$PROC
 sudo make modules_install
 sudo make install
