@@ -1,0 +1,719 @@
+--- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
++++ mm/memory.c	2026-04-12 03:00:19.341285412 +0000
+@@ -1355,6 +1355,10 @@
+ 			struct page *page;
+ 
+ 			page = vm_normal_page(vma, addr, ptent);
++			/* -------------------- EXTENTS HANDELER --------*/
++			if (current->mm->use_extents)
++    				extent_rb_remove_page(&current->mm->extent_pt, page_to_phys(page));
++			/* -------------------- END EXTENS HANDLING ------*/
+ 			if (unlikely(details) && page) {
+ 				/*
+ 				 * unmap_shared_mapping_pages() wants to
+@@ -3778,6 +3782,605 @@
+ 	return ret;
+ }
+ 
++/* ------------------------------ Angelo's code----------------*/
++#include <linux/rbtree.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/list.h>
++
++/*		DEFINITION OF EXTENT	*/
++
++//code assumes all extents are kmalloc'd in caller functions!
++
++//this will contain the proper content
++//kernel linked lists represent "themselves????" as nodes "inside of themselves???/"
++struct extent_page {
++	pte_t page;
++	struct list_head node;
++};
++
++//represents a contiguous set of physical pages
++typedef struct {
++	struct list_head extent_pagelist;
++	long pgcount;							//number of pages in this extent
++	pte_t starting_phys_addr;
++	pte_t ending_phys_addr;
++} extent;
++
++//Creates a new extent with exactly 1 PTE
++void extent_init(extent* ex, pte_t pte){
++	//set the extent structure fields
++	ex->starting_phys_addr = pte;
++	ex->ending_phys_addr = pte;
++	ex->pgcount = 1;
++	//create the "pointer to the linked list"
++	INIT_LIST_HEAD(&ex->extent_pagelist);
++
++
++	struct extent_page *first = kmalloc(sizeof(struct extent_page), GFP_KERNEL);
++	if(!first) return -ENOMEM;
++	first->page = pte;
++	
++	//add the node to the new linked list
++	list_add(&first->node, &ex->extent_pagelist);
++};
++
++int extent_add_adjacent(extent* ex, pte_t pte){
++	//new pte is before the existing rang
++
++    //run the necessary checks
++	if(pte == ex->starting_phys_addr-1){
++        struct extent_page *new = kmalloc(sizeof(struct extent_page), GFP_KERNEL);
++        new->page = pte;
++		ex->starting_phys_addr = pte;
++		list_add(&new->node, &ex->extent_pagelist);
++	}else
++	//new pte is after the existing range
++	if(pte == ex->ending_phys_addr+1){
++        struct extent_page *new = kmalloc(sizeof(struct extent_page), GFP_KERNEL);
++        new->page = pte;
++		ex->ending_phys_addr = pte;
++		list_add_tail(&new->node, &ex->extent_pagelist);
++	}else{
++		//pte is non-contiguous, a mistake was made
++		return -1;
++	}
++
++	ex->pgcount = ex->pgcount+1;
++
++	return 0;
++	
++}
++
++int extent_pte_is_start_or_end(extent* ex, pte_t pte){
++	if(pte == ex->ending_phys_addr || pte == ex->starting_phys_addr){
++		return 1;
++	}
++	return 0;
++}
++
++int extent_pte_is_adjacent(extent* ex, pte_t pte){
++	if(pte == ex->ending_phys_addr+1 || pte == ex->starting_phys_addr-1){
++		return 1;
++	}
++	return 0;
++}
++
++int extent_pte_is_before(extent* ex, pte_t pte){
++	if(pte < ex->starting_phys_addr){
++		return 1;
++	}
++	return 0;
++}
++
++int extent_pte_is_after(extent* ex, pte_t pte){
++	if(pte > ex->ending_phys_addr){
++		return 1;
++	}
++	return 0;
++}
++
++int extent_pte_contains(extent* ex, pte_t pte){
++	if(pte >= ex->starting_phys_addr && pte <= ex->ending_phys_addr){
++		return 1;
++	}
++	return 0;
++}
++
++int extent_pte_contains_foreach(extent* ex, pte_t pte){
++
++	struct extent_page *curr_page;
++
++	list_for_each_entry(curr_page, &ex->extent_pagelist, node) {
++		if (curr_page->page == pte){
++				return 1;
++		}
++	}
++	return 0;
++}
++
++int extents_are_adjacent(extent* ex1, extent* ex2){
++	//ex1 <-> ex2
++	if(ex1->ending_phys_addr == ex2->starting_phys_addr-1 || ex2->ending_phys_addr == ex1->starting_phys_addr-1){
++		return 1;
++	}
++	return 0;
++}
++
++//NOT FINISHED YET
++//split an extent into two separate extents WITHOUT pte
++//which occurs because a page in the middle is being freed
++//src_ex will contain the modified left part of the extent (pages to the left of the removed page)
++//new_right_half will contain the new right part of the old extent (pages to the right of the removed page)
++//please provide an empty buffer on the right that is already kmalloc'd
++//memory destruction is handled here
++int extent_split(extent* src_ex, pte_t pte, extent* new_right_half){
++
++	//don't split if extent doesn't contain the delimiter pte
++	if(!extent_pte_contains(src_ex, pte)){
++		return -1;	
++	}
++
++	//don't split if the pte is on the edge
++	if(extent_pte_is_start_or_end(src_ex, pte)){
++		return -1;	
++	}
++
++	//we can assume the list has 3 or more elements here
++
++	//make a new right page, it will not include the pte
++	new_right_half->pgcount = src_ex->ending_phys_addr-pte;
++	new_right_half->starting_phys_addr = pte+1;
++	new_right_half->ending_phys_addr = src_ex->ending_phys_addr;
++	INIT_LIST_HEAD(&new_right_half->extent_pagelist);
++
++	struct extent_page *curr_page;
++	struct extent_page *temp;
++
++	list_for_each_entry_safe(curr_page, temp, &src_ex->extent_pagelist, node) {
++		if (curr_page->page == pte){	//find the pte in question
++
++			//every node after the pte in the old list is put into the list
++			list_cut_position(&new_right_half->extent_pagelist, &src_ex->extent_pagelist, &curr_page->node);
++
++			//remove from the old list the page with the pte
++			list_del(&curr_page->node);
++			kfree(curr_page);
++
++			break;
++		}
++	}
++
++	//update the original page to reflect the changes in the page list
++	src_ex->pgcount = pte-(src_ex->starting_phys_addr);
++	src_ex->ending_phys_addr = pte-1;
++
++	return 0;
++	
++}
++
++//merge two extents together after performing the appropriate checks
++//to_ex will contain all of the pages from from_ex,
++//and from_ex will be destroyed
++int extent_merge(extent* to_ex, extent* from_ex){
++	
++	if(!extents_are_adjacent(to_ex, from_ex)){
++		//can't merge nonadjacent extents
++		return -1;
++	}
++
++	if(to_ex->pgcount == 0 || from_ex->pgcount == 0){
++		//useless to merge nothing
++		return -1;
++	}
++
++	struct extent_page* curr_page;
++	
++	//to_ex <-> from_ex
++	if(to_ex->ending_phys_addr == from_ex->starting_phys_addr-1){
++		//we need the last element of to_ex
++		list_for_each_entry(curr_page, &to_ex->extent_pagelist, node){
++			//doing nothing will let us achieve this?
++		}
++		//elements from "from" continue from the last element in "to"
++		list_splice(&from_ex->extent_pagelist, &curr_page->node);
++
++		to_ex->pgcount += from_ex->pgcount;
++		to_ex->ending_phys_addr = from_ex->ending_phys_addr;
++		from_ex->pgcount = 0;
++		extent_destroy(from_ex);
++
++		return 0;
++	}
++	else
++	//from_ex <-> to_ex
++	if(from_ex->ending_phys_addr == to_ex->starting_phys_addr-1){
++		//we need the last element of to_ex
++		list_for_each_entry(curr_page, &to_ex->extent_pagelist, node){
++			//doing nothing will let us achieve this?
++		}
++		//elements from "from" continue from the last element in "to"
++		//so we end up in a weird position here
++		//where we can end up with something like (5-6-7-8)(1-2-3-4.)
++		list_splice(&from_ex->extent_pagelist, &curr_page->node);
++
++		//take the element at the head, put at in the tail, for many elements as were added
++		for(int i = 0; i < from_ex->pgcount; i++){
++			list_rotate_left(&to_ex->extent_pagelist);
++		}
++
++		to_ex->pgcount += from_ex->pgcount;
++		to_ex->starting_phys_addr = from_ex->starting_phys_addr;
++		from_ex->pgcount = 0;
++
++		extent_destroy(from_ex);
++		return 0;
++	}
++	//pages must be nonadjacent, but not caught by above checks
++	return 1;
++}
++
++//remove the first or last address in an extent
++//which occurs because a page on either end is being freed
++int extent_trim(extent* ex, pte_t pte){
++
++	//run the necessary checks
++	if(!extent_pte_is_start_or_end(ex, pte)){
++		//pte is non-contiguous
++		return -1;
++	}
++
++	//move ending address backwards
++	if(pte == ex->ending_phys_addr && ex->pgcount > 1){
++		ex->ending_phys_addr = ex->ending_phys_addr-1;
++	}
++	else
++	//move beginning address forwards
++	if(pte == ex->starting_phys_addr && ex->pgcount > 1){
++		ex->starting_phys_addr = ex->starting_phys_addr+1;
++	}
++
++	//for each loop to remove the thing
++	//curr_page is a pointer to the linked list entry
++	//&ex->extent_pagelist is the head of the list to be searched in
++	//node is what the node representation in each linked list element is called
++
++	struct extent_page *curr_page;
++	struct extent_page *temp;		//to prevent concurrent modification error
++	
++	list_for_each_entry_safe(curr_page, temp, &ex->extent_pagelist, node) {
++		if (curr_page->page == pte){
++				list_del(&curr_page->node);
++				kfree(curr_page);
++		}
++		break;
++	}
++
++	ex->pgcount = ex->pgcount-1;	//decrement page count
++	//be sure to properly destroy the extent if there are no pages
++
++	return 0;
++}
++
++//destroy an extent structure if it has no pages
++//also frees memory
++int extent_destroy(extent* ex){
++	if(ex->pgcount > 0){
++		return -1;
++	}
++	kfree(ex);
++	return 0;
++}
++
++//destroy an extent structure if it has pages
++//also frees its memory
++//dangerous to use so i don't use it anywhere here
++int extent_complete_destroy(extent* ex){
++	//check number of pages
++	if(ex->pgcount == 0){
++		return -1;
++	}
++	
++	struct extent_page *curr_page;
++	struct extent_page *temp;		//to prevent concurrent modification error
++
++	list_for_each_entry_safe(curr_page, temp, &ex->extent_pagelist, node) {
++		list_del(curr_page);		//remove item from linked list
++		kfree(curr_page);			//free memory	
++	}
++
++	//free the extent buffer
++	kfree(ex);
++
++	return 0;
++}
++
++
++/* ------------------------------ Vince's code-----------------*/
++// rb_node wrapper
++struct extent_node {
++	struct rb_node  rb;
++	extent         *ex;
++};
++
++/* ADD THIS STRUCT TO "mm_types.h"
++ * the rb tree is like our own page table,
++ * needs to be locked when doing stuff*/
++struct extent_pagetable {
++	struct rb_root  root;
++	spinlock_t      lock;
++};
++
++/* Inserts new extent, only for new extent!!!
++ * DOES NOT CHECK NEW PAGE LOCATION, 
++ * THAT IS HANDLED IN "extent_rb_insert_or_add" */
++static void extent_rb_insert(struct rb_root *root, struct extent_node *en){
++	
++  struct rb_node **link = &root->rb_node, *parent = NULL;
++	pte_t value = en->ex->starting_phys_addr;
++
++	// walk through tree using start addr as comparator
++  // this maintains the tree based on start addr
++	while (*link) {
++		struct extent_node *cur;
++
++		parent = *link;
++		cur = rb_entry(parent, struct extent_node, rb);
++
++		if (cur->ex->starting_phys_addr > value)
++			link = &(*link)->rb_left;
++		else
++			link = &(*link)->rb_right;
++	}
++
++	// attach and rebalance
++	rb_link_node(&en->rb, parent, link);
++	rb_insert_color(&en->rb, root);
++}
++
++/* scan whole tree linearly to see if new page is adjacent
++ * uses Angelo's helper function extent_pte_is_adjacent 
++ * need to check for 2 adjacencies in case of merge */
++static int extent_rb_find_all_adjacent(struct rb_root *root, pte_t phys_addr,	struct extent_node *out[2]){
++	struct rb_node *node;
++	int found = 0;
++ 
++	out[0] = out[1] = NULL;
++ 
++	for (node = rb_first(root); node != NULL && found < 2; node = rb_next(node)) {
++		struct extent_node *en = rb_entry(node, struct extent_node, rb);
++ 
++		if (extent_pte_is_adjacent(en->ex, phys_addr))
++			out[found++] = en;
++	}
++	return found;
++}
++
++/* THIS IS CALLED WHEN PAGE FAULT OCCURS
++ * params: extent page table we defined, new page addr
++ *
++ * case 1 :) -> new page is adjacent, add to existing extent
++ * case 1.5 >:( -> new page is adjacent to start of one extent and end of another, merge
++ * case 2 :( -> no extent exists, make new one and insert 
++ * if new page is in between start and end extent something went rly wrong */
++int extent_rb_insert_or_add(struct extent_pagetable *pt, pte_t phys_addr)
++{
++	struct extent_node *adj[2];
++	int n_adj;
++	unsigned long flags;
++	int ret = 0;
++ 
++	spin_lock_irqsave(&pt->lock, flags);
++ 
++	n_adj = extent_rb_find_all_adjacent(&pt->root, phys_addr, adj);
++ 
++	if (n_adj == 2) {
++		// CASE 1.5
++		struct extent_node *left_en, *right_en;
++ 
++		if (adj[0]->ex->ending_phys_addr == phys_addr - 1) {
++			left_en  = adj[0];
++			right_en = adj[1];
++		} else {
++			left_en  = adj[1];
++			right_en = adj[0];
++		}
++ 
++    // use the left adacency cuz start addr is key for rb nodes
++		extent_add_adjacent(left_en->ex, phys_addr);
++ 
++		extent_merge(left_en->ex, right_en->ex);
++ 
++		rb_erase(&right_en->rb, &pt->root);
++		kfree(right_en); 
++ 
++	} else if (n_adj == 1) {
++		// CASE 1
++    struct extent_node *en = adj[0];
++ 
++		if (phys_addr == en->ex->starting_phys_addr - 1) {
++			rb_erase(&en->rb, &pt->root);
++			extent_add_adjacent(en->ex, phys_addr);
++			extent_rb_insert(&pt->root, en);
++		} else {
++			extent_add_adjacent(en->ex, phys_addr);
++		}
++ 
++	} else {
++		// CASE 2
++		extent *ex = kmalloc(sizeof(extent), GFP_ATOMIC);
++		if (!ex) {
++			ret = -ENOMEM;
++			goto out;
++		}
++ 
++		struct extent_node *en = kmalloc(sizeof(struct extent_node),
++						 GFP_ATOMIC);
++		if (!en) {
++			kfree(ex);
++			ret = -ENOMEM;
++			goto out;
++		}
++ 
++		extent_init(ex, phys_addr);
++		en->ex = ex;
++		extent_rb_insert(&pt->root, en);
++	}
++ 
++out:
++	spin_unlock_irqrestore(&pt->lock, flags);
++	return ret;
++}
++
++/* helper for extent_rb_insert_or_add
++ * checks every node if new page is in between start and end
++ * uses Angelos helper function extent_pte_containts */
++static struct extent_node *extent_rb_find_containing(struct rb_root *root,
++						     pte_t phys_addr)
++{
++	struct rb_node *node;
++
++	for (node = rb_first(root); node != NULL; node = rb_next(node)) {
++		struct extent_node *en = rb_entry(node, struct extent_node, rb);
++
++		if (extent_pte_contains(en->ex, phys_addr))
++			return en;
++	}
++	return NULL;
++}
++
++/* CALLED WHENEVER A PAGE IS FREED
++ *
++ * case 1 :) -> page is start or end, call Angelo's trim func
++ * case 2 :( -> page is in middle, call Angelo's split func, add 2 new to rb tree*/
++int extent_rb_remove_page(struct extent_pagetable *pt, pte_t phys_addr)
++{
++	struct extent_node *old_en;
++	unsigned long flags;
++	int ret = 0;
++
++	spin_lock_irqsave(&pt->lock, flags);
++
++  // find freed page extent
++	old_en = extent_rb_find_containing(&pt->root, phys_addr);
++	if (!old_en) {
++    // shouldn't happen but just in case ;)
++		ret = -EINVAL;
++		goto out;
++	}
++
++  // CASE 1
++	if (phys_addr == old_en->ex->starting_phys_addr ||
++	    phys_addr == old_en->ex->ending_phys_addr) {
++
++		int was_start = (phys_addr == old_en->ex->starting_phys_addr);
++
++		if (old_en->ex->pgcount == 1) {
++			/* Last page in the extent — remove it entirely */
++			rb_erase(&old_en->rb, &pt->root);
++			kfree(old_en->ex);
++			kfree(old_en);
++			goto out;
++		}
++
++		if (was_start) {
++			/*
++			 * Key is about to change (starting_phys_addr moves
++			 * forward by one).  Remove, trim, re-insert.
++			 */
++			rb_erase(&old_en->rb, &pt->root);
++			extent_trim(old_en->ex, phys_addr);
++			extent_rb_insert(&pt->root, old_en);
++		} else {
++			/* Tail trim — key unchanged, update in place. */
++			extent_trim(old_en->ex, phys_addr);
++		}
++
++	// CASE 2
++	} else {
++    
++    // only need new right extent, resue old left
++    // use 2 new wrappers to reinsert
++		extent *right_ex;
++		struct extent_node *left_en;
++		struct extent_node *right_en;
++	
++		right_ex = kmalloc(sizeof(extent), GFP_ATOMIC);
++		if (!right_ex) {
++			ret = -ENOMEM;
++			goto out;
++		}
++
++		left_en = kmalloc(sizeof(struct extent_node), GFP_ATOMIC);
++		if (!left_en) {
++			kfree(right_ex);
++			ret = -ENOMEM;
++			goto out;
++		}
++
++		right_en = kmalloc(sizeof(struct extent_node), GFP_ATOMIC);
++		if (!right_en) {
++			kfree(right_ex);
++			kfree(left_en);
++			ret = -ENOMEM;
++			goto out;
++		}
++
++    // Angelo's split func
++		extent_split(old_en->ex, phys_addr, right_ex);
++
++    // remove old wrapper and put both halves into their new wrappers	
++		rb_erase(&old_en->rb, &pt->root);
++		left_en->ex = old_en->ex;
++		kfree(old_en);
++		right_en->ex = right_ex;
++
++		// put em back in tree, should not have to check
++		extent_rb_insert(&pt->root, left_en);
++		extent_rb_insert(&pt->root, right_en);
++	}
++
++out:
++	spin_unlock_irqrestore(&pt->lock, flags);
++	return ret;
++}
++
++/* CALL WHEN PROCESS EXITS (exit_mmap)
++ * this is just for assignment to report the ending extents of process */
++int extent_rb_count(struct extent_pagetable *pt)
++{
++	struct rb_node *node;
++	int count = 0;
++
++	for (node = rb_first(&pt->root); node != NULL; node = rb_next(node))
++		count++;
++
++	return count;
++}
++
++/* CALL ON PROCESS EXIT 
++ * FREES THE RB TREE
++ * NEED TO CALL!!!! */
++void extent_rb_destroy(struct extent_pagetable *pt)
++{
++	struct rb_node *node;
++	unsigned long flags;
++
++	spin_lock_irqsave(&pt->lock, flags);
++
++	node = rb_first(&pt->root);
++	while (node) {
++		struct extent_node *en = rb_entry(node, struct extent_node, rb);
++		node = rb_next(node);                    /* advance before erase */
++		rb_erase(&en->rb, &pt->root);
++		kfree(en->ex);   /* free the extent struct itself */
++		kfree(en);        /* free the tree wrapper        */
++	}
++
++	spin_unlock_irqrestore(&pt->lock, flags);
++}
++/*---------------------------------------- END ASSIGNMENT CODE ----------------------*/
++
+ /*
+  * We enter with non-exclusive mmap_lock (to exclude vma changes,
+  * but allow concurrent faults), and pte mapped but not yet locked.
+@@ -3882,6 +4485,9 @@
+ 
+ 	/* No need to invalidate - it was non-present before */
+ 	update_mmu_cache(vma, vmf->address, vmf->pte);
++	/* HADLE THE EXTENTS IF ENABLED */
++	if (current->mm->use_extents)
++    		extent_rb_insert_or_add(&current->mm->extent_pt, page_to_phys(page));
+ unlock:
+ 	pte_unmap_unlock(vmf->pte, vmf->ptl);
+ 	return ret;
+--- include/linux/mm_types.h.old	2026-04-12 00:41:58.825409406 +0000
++++ include/linux/mm_types.h	2026-04-12 00:54:48.632946802 +0000
+@@ -584,7 +584,7 @@
+ 
+ #ifdef CONFIG_IOMMU_SUPPORT
+ 		u32 pasid;
+-#endif
++#endif	
+ 	} __randomize_layout;
+ 
+ 	/*
+@@ -592,6 +592,10 @@
+ 	 * is dynamically sized based on nr_cpu_ids.
+ 	 */
+ 	unsigned long cpu_bitmap[];
++
++	/*----------EXTENTS HANDLING---------*/
++	struct extent_pagetable extent_pt;
++	int use_extents;
+ };
+ 
+ extern struct mm_struct init_mm;
+--- kernel/fork.c.old	2026-04-12 02:53:20.263590650 +0000
++++ kernel/fork.c	2026-04-12 02:59:44.864813677 +0000
+@@ -1076,6 +1076,10 @@
+ 	RCU_INIT_POINTER(mm->exe_file, NULL);
+ 	mmu_notifier_subscriptions_init(mm);
+ 	init_tlb_flush_pending(mm);
++	/* HANDLE EXTENTS */
++	mm->extent_pt.root = RB_ROOT;
++	spin_lock_init(&mm->extent_pt.lock);
++	/* HANDLE EXTENTS */
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+--- mm/mmap.c.old	2026-04-12 02:42:30.754921442 +0000
++++ mm/mmap.c	2026-04-12 03:21:21.022763665 +0000
+@@ -3193,6 +3193,14 @@
+ /* Release all mmaps. */
+ void exit_mmap(struct mm_struct *mm)
+ {
++	/* HANDLE EXTENTS */
++	if (mm->extent_tracking_enabled) {
++        pr_info("extent: process %d had %d extents\n",
++                current->pid,
++                extent_rb_count(&mm->extent_pt));
++        extent_rb_destroy(&mm->extent_pt);
++    	}
++	/*  HANDLE EXTENTS */
+ 	struct mmu_gather tlb;
+ 	struct vm_area_struct *vma;
+ 	unsigned long nr_accounted = 0;
+@@ -3870,3 +3878,8 @@
+ 	return 0;
+ }
+ subsys_initcall(init_reserve_notifier);
++
++SYSCALL_DEFINE0(use_extents){
++    current->mm->extent_tracking_enabled = 1;
++    return 0;
++}
+--- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
++++ include/linux/syscalls.h	2026-04-12 03:23:46.568807081 +0000
+@@ -1279,6 +1279,8 @@
+  */
+ asmlinkage long sys_ni_syscall(void);
+ 
++asmlinkage long sys_use_extents(void); // EXTENTS HANDLER
++
+ #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
+ 
+ 
+--- arch/x86/entry/syscalls/syscall_64.tbl.old	2026-04-12 03:25:06.525932032 +0000
++++ arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
+@@ -370,7 +370,7 @@
+ 446	common	landlock_restrict_self	sys_landlock_restrict_self
+ 447	common	memfd_secret		sys_memfd_secret
+ 448	common	process_mrelease	sys_process_mrelease
+-
++449	common	use_extents		sys_use_extents
+ #
+ # Due to a historical design error, certain syscalls are numbered differently
+ # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
+--- arch/x86/entry/syscalls/syscall_32.tbl.old	2026-04-12 03:24:54.677765237 +0000
++++ arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:26:38.691230701 +0000
+@@ -453,3 +453,4 @@
+ 446	i386	landlock_restrict_self	sys_landlock_restrict_self
+ 447	i386	memfd_secret		sys_memfd_secret
+ 448	i386	process_mrelease	sys_process_mrelease
++449	i386	use_extents		sys_use_extents
