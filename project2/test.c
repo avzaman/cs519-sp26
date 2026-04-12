@@ -7,8 +7,9 @@
 
 int main() {
     /* enable extent tracking for this process */
-    syscall(SYS_use_extents);
-
+   
+    long ret = syscall(SYS_use_extents);
+    printf("syscall returned %ld\n", ret);
     /* allocate and touch memory to generate page faults */
     int n = 1000;
     int *arr = malloc(n * sizeof(int));
