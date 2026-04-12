@@ -1,5 +1,77 @@
+--- kernel/fork.c.old	2026-04-12 02:53:20.263590650 +0000
++++ kernel/fork.c	2026-04-12 02:59:44.864813677 +0000
+@@ -1076,6 +1076,10 @@
+ 	RCU_INIT_POINTER(mm->exe_file, NULL);
+ 	mmu_notifier_subscriptions_init(mm);
+ 	init_tlb_flush_pending(mm);
++	/* HANDLE EXTENTS */
++	mm->extent_pt.root = RB_ROOT;
++	spin_lock_init(&mm->extent_pt.lock);
++	/* HANDLE EXTENTS */
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+--- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
++++ include/linux/syscalls.h	2026-04-12 03:23:46.568807081 +0000
+@@ -1279,6 +1279,8 @@
+  */
+ asmlinkage long sys_ni_syscall(void);
+ 
++asmlinkage long sys_use_extents(void); // EXTENTS HANDLER
++
+ #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
+ 
+ 
+--- arch/x86/entry/syscalls/syscall_64.tbl.old	2026-04-12 03:25:06.525932032 +0000
++++ arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
+@@ -370,7 +370,7 @@
+ 446	common	landlock_restrict_self	sys_landlock_restrict_self
+ 447	common	memfd_secret		sys_memfd_secret
+ 448	common	process_mrelease	sys_process_mrelease
+-
++449	common	use_extents		sys_use_extents
+ #
+ # Due to a historical design error, certain syscalls are numbered differently
+ # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
+--- arch/x86/entry/syscalls/syscall_32.tbl.old	2026-04-12 03:24:54.677765237 +0000
++++ arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:26:38.691230701 +0000
+@@ -453,3 +453,4 @@
+ 446	i386	landlock_restrict_self	sys_landlock_restrict_self
+ 447	i386	memfd_secret		sys_memfd_secret
+ 448	i386	process_mrelease	sys_process_mrelease
++449	i386	use_extents		sys_use_extents
+--- include/linux/mm_types.h.old	2026-04-12 00:41:58.825409406 +0000
++++ include/linux/mm_types.h	2026-04-12 05:04:26.861333363 +0000
+@@ -403,8 +403,18 @@
+ 	struct completion startup;
+ };
+ 
++struct extent_pagetable {
++	struct rb_root  root;
++	spinlock_t      lock;
++};
++
+ struct kioctx_table;
+ struct mm_struct {
++
++	/*----------EXTENTS HANDLING---------*/
++	struct extent_pagetable extent_pt;
++	int use_extents;
++	/*---------END EXTENTS HANDLING------*/
+ 	struct {
+ 		struct vm_area_struct *mmap;		/* list of VMAs */
+ 		struct rb_root mm_rb;
+@@ -584,7 +594,7 @@
+ 
+ #ifdef CONFIG_IOMMU_SUPPORT
+ 		u32 pasid;
+-#endif
++#endif	
+ 	} __randomize_layout;
+ 
+ 	/*
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-12 03:00:19.341285412 +0000
++++ mm/memory.c	2026-04-12 05:05:16.306187272 +0000
 @@ -1355,6 +1355,10 @@
  			struct page *page;
  
@@ -11,7 +83,7 @@
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3782,605 @@
+@@ -3778,6 +3782,606 @@
  	return ret;
  }
  
@@ -339,10 +411,11 @@
 +/* ADD THIS STRUCT TO "mm_types.h"
 + * the rb tree is like our own page table,
 + * needs to be locked when doing stuff*/
-+struct extent_pagetable {
-+	struct rb_root  root;
-+	spinlock_t      lock;
-+};
++//struct extent_pagetable {
++//	struct rb_root  root;
++//	spinlock_t      lock;
++//};
++//struct itself was moved to the types file
 +
 +/* Inserts new extent, only for new extent!!!
 + * DOES NOT CHECK NEW PAGE LOCATION, 
@@ -617,7 +690,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4485,9 @@
+@@ -3882,6 +4486,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
@@ -627,67 +700,3 @@
  unlock:
  	pte_unmap_unlock(vmf->pte, vmf->ptl);
  	return ret;
---- include/linux/mm_types.h.old	2026-04-12 00:41:58.825409406 +0000
-+++ include/linux/mm_types.h	2026-04-12 00:54:48.632946802 +0000
-@@ -584,7 +584,7 @@
- 
- #ifdef CONFIG_IOMMU_SUPPORT
- 		u32 pasid;
--#endif
-+#endif	
- 	} __randomize_layout;
- 
- 	/*
-@@ -592,6 +592,10 @@
- 	 * is dynamically sized based on nr_cpu_ids.
- 	 */
- 	unsigned long cpu_bitmap[];
-+
-+	/*----------EXTENTS HANDLING---------*/
-+	struct extent_pagetable extent_pt;
-+	int use_extents;
- };
- 
- extern struct mm_struct init_mm;
---- kernel/fork.c.old	2026-04-12 02:53:20.263590650 +0000
-+++ kernel/fork.c	2026-04-12 02:59:44.864813677 +0000
-@@ -1076,6 +1076,10 @@
- 	RCU_INIT_POINTER(mm->exe_file, NULL);
- 	mmu_notifier_subscriptions_init(mm);
- 	init_tlb_flush_pending(mm);
-+	/* HANDLE EXTENTS */
-+	mm->extent_pt.root = RB_ROOT;
-+	spin_lock_init(&mm->extent_pt.lock);
-+	/* HANDLE EXTENTS */
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
- 	mm->pmd_huge_pte = NULL;
- #endif
---- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
-+++ include/linux/syscalls.h	2026-04-12 03:23:46.568807081 +0000
-@@ -1279,6 +1279,8 @@
-  */
- asmlinkage long sys_ni_syscall(void);
- 
-+asmlinkage long sys_use_extents(void); // EXTENTS HANDLER
-+
- #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
- 
- 
---- arch/x86/entry/syscalls/syscall_64.tbl.old	2026-04-12 03:25:06.525932032 +0000
-+++ arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
-@@ -370,7 +370,7 @@
- 446	common	landlock_restrict_self	sys_landlock_restrict_self
- 447	common	memfd_secret		sys_memfd_secret
- 448	common	process_mrelease	sys_process_mrelease
--
-+449	common	use_extents		sys_use_extents
- #
- # Due to a historical design error, certain syscalls are numbered differently
- # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
---- arch/x86/entry/syscalls/syscall_32.tbl.old	2026-04-12 03:24:54.677765237 +0000
-+++ arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:26:38.691230701 +0000
-@@ -453,3 +453,4 @@
- 446	i386	landlock_restrict_self	sys_landlock_restrict_self
- 447	i386	memfd_secret		sys_memfd_secret
- 448	i386	process_mrelease	sys_process_mrelease
-+449	i386	use_extents		sys_use_extents
