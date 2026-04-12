@@ -100,19 +100,29 @@
  
  	/*
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-12 17:49:45.965807440 +0000
-@@ -1355,6 +1355,10 @@
++++ mm/memory.c	2026-04-12 18:28:30.397323299 +0000
+@@ -1323,6 +1323,9 @@
+ 	return !details->check_mapping;
+ }
+ 
++//need forward declare so zap doesn't compile error:
++int extent_rb_remove_page(struct extent_pagetable *pt, unsigned long phys_addr);
++
+ static unsigned long zap_pte_range(struct mmu_gather *tlb,
+ 				struct vm_area_struct *vma, pmd_t *pmd,
+ 				unsigned long addr, unsigned long end,
+@@ -1355,6 +1358,10 @@
  			struct page *page;
  
  			page = vm_normal_page(vma, addr, ptent);
 +			/* -------------------- EXTENTS HANDELER --------*/
 +			if (current->mm->use_extents && page)
-+    				extent_rb_remove_page(&current->mm->extent_pt, pte_pfn(page_to_pfn(page)));
++    				extent_rb_remove_page(&current->mm->extent_pt, page_to_pfn(page));
 +			/* -------------------- END EXTENS HANDLING ------*/
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3782,618 @@
+@@ -3778,6 +3785,618 @@
  	return ret;
  }
  
@@ -731,7 +741,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4498,9 @@
+@@ -3882,6 +4501,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
