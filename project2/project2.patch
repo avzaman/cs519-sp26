@@ -100,19 +100,19 @@
  
  	/*
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-12 17:19:53.233775886 +0000
++++ mm/memory.c	2026-04-12 17:44:44.877175495 +0000
 @@ -1355,6 +1355,10 @@
  			struct page *page;
  
  			page = vm_normal_page(vma, addr, ptent);
 +			/* -------------------- EXTENTS HANDELER --------*/
-+			if (current->mm->use_extents)
++			if (current->mm->use_extents && page)
 +    				extent_rb_remove_page(&current->mm->extent_pt, pte_pfn(page_to_pfn(page)));
 +			/* -------------------- END EXTENS HANDLING ------*/
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3782,607 @@
+@@ -3778,6 +3782,618 @@
  	return ret;
  }
  
@@ -143,6 +143,8 @@
 +
 +//Creates a new extent with exactly 1 PTE
 +int extent_init(extent* ex, unsigned long pte){
++	//var declares should be at top of funcs
++	struct extent_page *first;
 +	//set the extent structure fields
 +	ex->starting_phys_addr = pte;
 +	ex->ending_phys_addr = pte;
@@ -151,7 +153,7 @@
 +	INIT_LIST_HEAD(&ex->extent_pagelist);
 +
 +
-+	struct extent_page *first = kmalloc(sizeof(struct extent_page), GFP_KERNEL);
++	first = kmalloc(sizeof(struct extent_page), GFP_KERNEL);
 +	if(!first) return -ENOMEM;
 +	first->page = pte;
 +	
@@ -174,13 +176,13 @@
 +//also frees its memory
 +//dangerous to use so i don't use it anywhere here
 +int extent_complete_destroy(extent* ex){
++	//var declares need be at top of func
++	struct extent_page *curr_page;
++	struct extent_page *temp;		//to prevent concurrent modification error
 +	//check number of pages
 +	if(ex->pgcount == 0){
 +		return -1;
 +	}
-+	
-+	struct extent_page *curr_page;
-+	struct extent_page *temp;		//to prevent concurrent modification error
 +
 +	list_for_each_entry_safe(curr_page, temp, &ex->extent_pagelist, node) {
 +		list_del(&curr_page->node);		//remove item from linked list
@@ -285,7 +287,9 @@
 +//please provide an empty buffer on the right that is already kmalloc'd
 +//memory destruction is handled here
 +int extent_split(extent* src_ex, unsigned long pte, extent* new_right_half){
-+
++	//var declares need to be at top of func
++	struct extent_page *curr_page;
++    	struct extent_page *temp;
 +	//don't split if extent doesn't contain the delimiter pte
 +	if(!extent_pte_contains(src_ex, pte)){
 +		return -1;	
@@ -303,9 +307,6 @@
 +	new_right_half->starting_phys_addr = pte+1;
 +	new_right_half->ending_phys_addr = src_ex->ending_phys_addr;
 +	INIT_LIST_HEAD(&new_right_half->extent_pagelist);
-+
-+	struct extent_page *curr_page;
-+	struct extent_page *temp;
 +
 +	list_for_each_entry_safe(curr_page, temp, &src_ex->extent_pagelist, node) {
 +		if (curr_page->page == pte){	//find the pte in question
@@ -333,6 +334,9 @@
 +//to_ex will contain all of the pages from from_ex,
 +//and from_ex will be destroyed
 +int extent_merge(extent* to_ex, extent* from_ex){
++	//var declares need to be at top of func
++	struct extent_page *curr_page;
++    	int i;
 +	
 +	if(!extents_are_adjacent(to_ex, from_ex)){
 +		//can't merge nonadjacent extents
@@ -343,8 +347,6 @@
 +		//useless to merge nothing
 +		return -1;
 +	}
-+
-+	struct extent_page* curr_page;
 +	
 +	//to_ex <-> from_ex
 +	if(to_ex->ending_phys_addr == from_ex->starting_phys_addr-1){
@@ -375,7 +377,7 @@
 +		list_splice(&from_ex->extent_pagelist, &curr_page->node);
 +
 +		//take the element at the head, put at in the tail, for many elements as were added
-+		for(int i = 0; i < from_ex->pgcount; i++){
++		for(i = 0; i < from_ex->pgcount; i++){
 +			list_rotate_left(&to_ex->extent_pagelist);
 +		}
 +
@@ -502,18 +504,22 @@
 + * case 2 :( -> no extent exists, make new one and insert 
 + * if new page is in between start and end extent something went rly wrong */
 +int extent_rb_insert_or_add(struct extent_pagetable *pt, unsigned long phys_addr){
++	//all vars declare at top!!
 +	struct extent_node *adj[2];
 +	int n_adj;
 +	unsigned long flags;
 +	int ret = 0;
-+ 
++ 	
++	struct extent_node *left_en, *right_en;
++	struct extent_node *en;
++    	extent *ex;
++
 +	spin_lock_irqsave(&pt->lock, flags);
 + 
 +	n_adj = extent_rb_find_all_adjacent(&pt->root, phys_addr, adj);
 + 
 +	if (n_adj == 2) {
 +		// CASE 1.5
-+		struct extent_node *left_en, *right_en;
 + 
 +		if (adj[0]->ex->ending_phys_addr == phys_addr - 1) {
 +			left_en  = adj[0];
@@ -533,7 +539,7 @@
 + 
 +	} else if (n_adj == 1) {
 +		// CASE 1
-+    struct extent_node *en = adj[0];
++    		en = adj[0];
 + 
 +		if (phys_addr == en->ex->starting_phys_addr - 1) {
 +			rb_erase(&en->rb, &pt->root);
@@ -545,7 +551,7 @@
 + 
 +	} else {
 +		// CASE 2
-+		extent *ex = kmalloc(sizeof(extent), GFP_ATOMIC);
++		ex = kmalloc(sizeof(extent), GFP_ATOMIC);
 +		if (!ex) {
 +			ret = -ENOMEM;
 +			goto out;
@@ -589,11 +595,16 @@
 + *
 + * case 1 :) -> page is start or end, call Angelo's trim func
 + * case 2 :( -> page is in middle, call Angelo's split func, add 2 new to rb tree*/
-+int extent_rb_remove_page(struct extent_pagetable *pt, unsigned long phys_addr)
-+{
++int extent_rb_remove_page(struct extent_pagetable *pt, unsigned long phys_addr){
++	//all var declare at top!!!
 +	struct extent_node *old_en;
 +	unsigned long flags;
 +	int ret = 0;
++
++	extent *right_ex;
++    	struct extent_node *left_en;
++    	struct extent_node *right_en;
++    	int was_start;
 +
 +	spin_lock_irqsave(&pt->lock, flags);
 +
@@ -609,7 +620,7 @@
 +	if (phys_addr == old_en->ex->starting_phys_addr ||
 +	    phys_addr == old_en->ex->ending_phys_addr) {
 +
-+		int was_start = (phys_addr == old_en->ex->starting_phys_addr);
++		was_start = (phys_addr == old_en->ex->starting_phys_addr);
 +
 +		if (old_en->ex->pgcount == 1) {
 +			/* Last page in the extent — remove it entirely */
@@ -637,9 +648,9 @@
 +    
 +    		// only need new right extent, resue old left
 +   		// use 2 new wrappers to reinsert
-+		extent *right_ex;
-+		struct extent_node *left_en;
-+		struct extent_node *right_en;
++		//extent *right_ex;
++		//struct extent_node *left_en;
++		//struct extent_node *right_en;
 +	
 +		right_ex = kmalloc(sizeof(extent), GFP_ATOMIC);
 +		if (!right_ex) {
@@ -720,7 +731,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4487,9 @@
+@@ -3882,6 +4498,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
