@@ -8,15 +8,18 @@
 int main() {
     /* enable extent tracking for this process */
    
-    long ret = syscall(SYS_use_extents);
+    long ret = syscall(SYS_use_extents,0);
     printf("syscall returned %ld\n", ret);
     /* allocate and touch memory to generate page faults */
-    int n = 1000;
-    int *arr = malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++)
+    int num_pages = 100;
+    int num_ints = num_pages*4096/sizeof(int);
+    int *arr = malloc(num_ints*sizeof(int));
+    for (int i = 0; i < num_ints; i++)
         arr[i] = i;
 
-    printf("done touching %d pages\n", n);
+    printf("done touching %d pages\n", num_pages);
+    syscall(SYS_use_extents,1);
     free(arr);
+    syscall(SYS_use_extents,1);
     return 0;
 }
