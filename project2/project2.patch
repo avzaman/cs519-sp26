@@ -1,14 +1,3 @@
---- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
-+++ include/linux/syscalls.h	2026-04-12 03:23:46.568807081 +0000
-@@ -1279,6 +1279,8 @@
-  */
- asmlinkage long sys_ni_syscall(void);
- 
-+asmlinkage long sys_use_extents(void); // EXTENTS HANDLER
-+
- #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
- 
- 
 --- arch/x86/entry/syscalls/syscall_64.tbl.old	2026-04-12 03:25:06.525932032 +0000
 +++ arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
 @@ -370,7 +370,7 @@
@@ -59,21 +48,6 @@
  	} __randomize_layout;
  
  	/*
---- include/linux/mm.h.old	2026-04-12 19:46:27.170435688 +0000
-+++ include/linux/mm.h	2026-04-12 19:47:16.131220003 +0000
-@@ -33,6 +33,12 @@
- #include <linux/pgtable.h>
- #include <linux/kasan.h>
- 
-+/*EXTENTS SHARED FUNCS and STRUCTS*/
-+struct extent_pagetable;
-+int extent_rb_count(struct extent_pagetable *pt);
-+void extent_rb_destroy(struct extent_pagetable *pt);
-+/*END EXTENTS FORWARD DECLARES*/
-+
- struct mempolicy;
- struct anon_vma;
- struct anon_vma_chain;
 --- kernel/fork.c.old	2026-04-12 02:53:20.263590650 +0000
 +++ kernel/fork.c	2026-04-12 21:01:04.872579440 +0000
 @@ -1076,6 +1076,12 @@
@@ -89,8 +63,35 @@
  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
  	mm->pmd_huge_pte = NULL;
  #endif
+--- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
++++ include/linux/syscalls.h	2026-04-13 18:32:26.907207498 +0000
+@@ -1279,6 +1279,8 @@
+  */
+ asmlinkage long sys_ni_syscall(void);
+ 
++asmlinkage long sys_use_extents(int flag); // EXTENTS HANDLER
++
+ #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
+ 
+ 
+--- include/linux/mm.h.old	2026-04-12 19:46:27.170435688 +0000
++++ include/linux/mm.h	2026-04-13 18:28:21.431536087 +0000
+@@ -33,6 +33,13 @@
+ #include <linux/pgtable.h>
+ #include <linux/kasan.h>
+ 
++/*EXTENTS SHARED FUNCS and STRUCTS*/
++struct extent_pagetable;
++int extent_rb_count(struct extent_pagetable *pt);//obsolete
++void extent_rb_destroy(struct extent_pagetable *pt);
++void extent_rb_print(struct extent_pagetable *pt);
++/*END EXTENTS FORWARD DECLARES*/
++
+ struct mempolicy;
+ struct anon_vma;
+ struct anon_vma_chain;
 --- mm/mmap.c.old	2026-04-12 02:42:30.754921442 +0000
-+++ mm/mmap.c	2026-04-12 21:01:45.981217490 +0000
++++ mm/mmap.c	2026-04-13 18:23:41.063340426 +0000
 @@ -49,6 +49,9 @@
  #include <linux/sched/mm.h>
  #include <linux/memfd.h>
@@ -101,7 +102,7 @@
  #include <linux/uaccess.h>
  #include <asm/cacheflush.h>
  #include <asm/tlb.h>
-@@ -3190,9 +3193,16 @@
+@@ -3190,9 +3193,15 @@
  }
  EXPORT_SYMBOL(vm_brk);
  
@@ -110,26 +111,31 @@
  void exit_mmap(struct mm_struct *mm)
  {
 +	/* HANDLE EXTENTS */
-+	if (mm && mm->use_extents) {
-+        	pr_info("extent: process %d had %d extents\n",current->pid,extent_rb_count(&mm->extent_pt));
++	if (mm && mm->use_extents) { 
 +        	extent_rb_destroy(&mm->extent_pt);
 +    	}
 +	/*  HANDLE EXTENTS END */
  	struct mmu_gather tlb;
  	struct vm_area_struct *vma;
  	unsigned long nr_accounted = 0;
-@@ -3870,3 +3880,9 @@
+@@ -3870,3 +3879,15 @@
  	return 0;
  }
  subsys_initcall(init_reserve_notifier);
 +
 +//simple flag syscall to enable extent handling
-+SYSCALL_DEFINE0(use_extents){
-+    current->mm->use_extents = 1;
-+    return 0;
++SYSCALL_DEFINE1(use_extents,int,flag){
++	if(flag==0)
++	    current->mm->use_extents = 1;
++	else if(flag==1){
++		// print all extent info
++		if (current->mm && current->mm->use_extents)
++            		extent_rb_print(&current->mm->extent_pt);
++	}
++	return 0;
 +}
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-12 20:57:44.981494677 +0000
++++ mm/memory.c	2026-04-13 18:27:48.475043037 +0000
 @@ -1323,6 +1323,9 @@
  	return !details->check_mapping;
  }
@@ -151,7 +157,7 @@
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3785,618 @@
+@@ -3778,6 +3785,638 @@
  	return ret;
  }
  
@@ -732,7 +738,8 @@
 +}
 +                                                   
 +/* CALL WHEN PROCESS EXITS (exit_mmap)                                    
-+ * this is just for assignment to report the ending extents of process */   
++ * this is just for assignment to report the ending extents of process 
++ * REPLACED WITH extent_rb_print THIS IS GARBAGE*/   
 +int extent_rb_count(struct extent_pagetable *pt)
 +{                                                                          
 +        struct rb_node *node;                                             
@@ -742,7 +749,26 @@
 +                count++;                     
 +                                                                          
 +        return count;                                                     
-+}                                                                           
++}
++
++/* NEW PRINT FUNCTION FOR SYSCALL */
++void extent_rb_print(struct extent_pagetable *pt){
++    struct rb_node *node;
++    unsigned long flags;
++    int i = 0;
++    struct extent_node *en;
++
++    spin_lock_irqsave(&pt->lock, flags);
++
++    for (node = rb_first(&pt->root); node != NULL; node = rb_next(node)) {
++        en = rb_entry(node, struct extent_node, rb);
++        pr_info("extent[%d]: start=%lu end=%lu pages=%ld\n",i,en->ex->starting_phys_addr,en->ex->ending_phys_addr,en->ex->pgcount);
++        i++;
++    }
++    pr_info("extent: total extents = %d\n", i);
++
++    spin_unlock_irqrestore(&pt->lock, flags);
++}
 +                             
 +/* CALL ON PROCESS EXIT                        
 + * FREES THE RB TREE                                                   
@@ -770,7 +796,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4501,9 @@
+@@ -3882,6 +4521,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
