@@ -135,7 +135,7 @@
 +	return 0;
 +}
 --- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-13 18:27:48.475043037 +0000
++++ mm/memory.c	2026-04-14 02:39:59.946704353 +0000
 @@ -1323,6 +1323,9 @@
  	return !details->check_mapping;
  }
@@ -157,7 +157,7 @@
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3785,638 @@
+@@ -3778,6 +3785,642 @@
  	return ret;
  }
  
@@ -669,6 +669,7 @@
 +
 +		if (old_en->ex->pgcount == 1) {
 +			/* Last page in the extent — remove it entirely */
++			extent_trim(old_en->ex,phys_addr);
 +			rb_erase(&old_en->rb, &pt->root);
 +			kfree(old_en->ex);
 +			kfree(old_en);
@@ -757,15 +758,18 @@
 +    unsigned long flags;
 +    int i = 0;
 +    struct extent_node *en;
++    int total_pages = 0;
 +
 +    spin_lock_irqsave(&pt->lock, flags);
 +
++    pr_info("------- BEGIN EXTENT REPORT -------\n");
 +    for (node = rb_first(&pt->root); node != NULL; node = rb_next(node)) {
 +        en = rb_entry(node, struct extent_node, rb);
 +        pr_info("extent[%d]: start=%lu end=%lu pages=%ld\n",i,en->ex->starting_phys_addr,en->ex->ending_phys_addr,en->ex->pgcount);
-+        i++;
++        total_pages += en->ex->pgcount;
++	i++;
 +    }
-+    pr_info("extent: total extents = %d\n", i);
++    pr_info("extent: total extents = %d total pages = %d\n", i,total_pages);
 +
 +    spin_unlock_irqrestore(&pt->lock, flags);
 +}
@@ -796,7 +800,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4521,9 @@
+@@ -3882,6 +4525,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
