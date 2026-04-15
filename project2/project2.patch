@@ -1,5 +1,5 @@
---- arch/x86/entry/syscalls/syscall_64.tbl.old	2026-04-12 03:25:06.525932032 +0000
-+++ arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
+--- a/arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:25:06.525932032 +0000
++++ b/arch/x86/entry/syscalls/syscall_64.tbl	2026-04-12 03:28:07.528484397 +0000
 @@ -370,7 +370,7 @@
  446	common	landlock_restrict_self	sys_landlock_restrict_self
  447	common	memfd_secret		sys_memfd_secret
@@ -9,15 +9,15 @@
  #
  # Due to a historical design error, certain syscalls are numbered differently
  # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
---- arch/x86/entry/syscalls/syscall_32.tbl.old	2026-04-12 03:24:54.677765237 +0000
-+++ arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:26:38.691230701 +0000
+--- a/arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:24:54.677765237 +0000
++++ b/arch/x86/entry/syscalls/syscall_32.tbl	2026-04-12 03:26:38.691230701 +0000
 @@ -453,3 +453,4 @@
  446	i386	landlock_restrict_self	sys_landlock_restrict_self
  447	i386	memfd_secret		sys_memfd_secret
  448	i386	process_mrelease	sys_process_mrelease
 +449	i386	use_extents		sys_use_extents
---- include/linux/mm_types.h.old	2026-04-12 00:41:58.825409406 +0000
-+++ include/linux/mm_types.h	2026-04-12 17:18:09.088129596 +0000
+--- a/include/linux/mm_types.h	2026-04-12 00:41:58.825409406 +0000
++++ b/include/linux/mm_types.h	2026-04-12 17:18:09.088129596 +0000
 @@ -403,8 +403,20 @@
  	struct completion startup;
  };
@@ -48,8 +48,8 @@
  	} __randomize_layout;
  
  	/*
---- kernel/fork.c.old	2026-04-12 02:53:20.263590650 +0000
-+++ kernel/fork.c	2026-04-12 21:01:04.872579440 +0000
+--- a/kernel/fork.c	2026-04-12 02:53:20.263590650 +0000
++++ b/kernel/fork.c	2026-04-12 21:01:04.872579440 +0000
 @@ -1076,6 +1076,12 @@
  	RCU_INIT_POINTER(mm->exe_file, NULL);
  	mmu_notifier_subscriptions_init(mm);
@@ -63,8 +63,8 @@
  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
  	mm->pmd_huge_pte = NULL;
  #endif
---- include/linux/syscalls.h.old	2026-04-12 03:22:02.727348606 +0000
-+++ include/linux/syscalls.h	2026-04-13 18:32:26.907207498 +0000
+--- a/include/linux/syscalls.h	2026-04-12 03:22:02.727348606 +0000
++++ b/include/linux/syscalls.h	2026-04-13 18:32:26.907207498 +0000
 @@ -1279,6 +1279,8 @@
   */
  asmlinkage long sys_ni_syscall(void);
@@ -74,8 +74,8 @@
  #endif /* CONFIG_ARCH_HAS_SYSCALL_WRAPPER */
  
  
---- include/linux/mm.h.old	2026-04-12 19:46:27.170435688 +0000
-+++ include/linux/mm.h	2026-04-13 18:28:21.431536087 +0000
+--- a/include/linux/mm.h	2026-04-12 19:46:27.170435688 +0000
++++ b/include/linux/mm.h	2026-04-13 18:28:21.431536087 +0000
 @@ -33,6 +33,13 @@
  #include <linux/pgtable.h>
  #include <linux/kasan.h>
@@ -90,8 +90,8 @@
  struct mempolicy;
  struct anon_vma;
  struct anon_vma_chain;
---- mm/mmap.c.old	2026-04-12 02:42:30.754921442 +0000
-+++ mm/mmap.c	2026-04-13 18:23:41.063340426 +0000
+--- a/mm/mmap.c	2026-04-12 02:42:30.754921442 +0000
++++ b/mm/mmap.c	2026-04-13 18:23:41.063340426 +0000
 @@ -49,6 +49,9 @@
  #include <linux/sched/mm.h>
  #include <linux/memfd.h>
@@ -134,8 +134,8 @@
 +	}
 +	return 0;
 +}
---- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
-+++ mm/memory.c	2026-04-14 03:09:26.652430565 +0000
+--- a/mm/memory.c	2026-04-12 00:10:39.649029348 +0000
++++ b/mm/memory.c	2026-04-14 03:09:26.652430565 +0000
 @@ -1323,6 +1323,9 @@
  	return !details->check_mapping;
  }
