@@ -20,6 +20,6 @@ int main(int argc, char* argv[]) {
     printf("done touching %d pages\n", num_pages);
     syscall(SYS_use_extents,1);
     free(arr);
-    syscall(SYS_use_extents,1);
+    //syscall(SYS_use_extents,1);
     return 0;
 }
