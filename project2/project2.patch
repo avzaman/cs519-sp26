@@ -134,8 +134,8 @@
 +	}
 +	return 0;
 +}
---- a/mm/memory.c	2026-04-12 00:10:39.649029348 +0000
-+++ b/mm/memory.c	2026-04-14 03:09:26.652430565 +0000
+--- mm/memory.c.old	2026-04-12 00:10:39.649029348 +0000
++++ mm/memory.c	2026-04-14 03:09:26.652430565 +0000
 @@ -1323,6 +1323,9 @@
  	return !details->check_mapping;
  }
@@ -524,22 +524,64 @@
 +	rb_insert_color(&en->rb, root);
 +}
 +
-+/* scan whole tree linearly to see if new page is adjacent
++/* Binary search check adj for starting physical addr*/
++static struct extent_node *extent_rb_find_by_start(struct rb_root *root,unsigned long key){
++    struct rb_node *node = root->rb_node;
++ struct extent_node *en;
++    while (node) {
++       en = rb_entry(node, struct extent_node, rb);
++
++        if (key < en->ex->starting_phys_addr)
++            node = node->rb_left;
++        else if (key > en->ex->starting_phys_addr)
++            node = node->rb_right;
++        else
++            return en;
++    }
++    return NULL;
++}
++
++/* Binary search for ending physical addr adjaceny*/
++static struct extent_node *extent_rb_find_left_neighbor(struct rb_root *root,unsigned long phys_addr){
++struct rb_node *node = root->rb_node;
++        struct extent_node *best = NULL;
++        struct extent_node *en;
++        while (node) {
++                en = rb_entry(node, struct extent_node, rb);
++
++                if (en->ex->starting_phys_addr < phys_addr) {
++                        best = en;
++                        node = node->rb_right;
++                } else {
++                        node = node->rb_left;
++                }
++        }
++
++        //check if found neihgbor is adj
++        if (best && best->ex->ending_phys_addr == phys_addr - 1)
++                return best;
++        return NULL;
++}
++
++/* check left and right adjacency to see if new page is adjacent
 + * uses Angelo's helper function extent_pte_is_adjacent 
 + * need to check for 2 adjacencies in case of merge */
-+static int extent_rb_find_all_adjacent(struct rb_root *root, unsigned long phys_addr,	struct extent_node *out[2]){
-+	struct rb_node *node;
-+	int found = 0;
-+ 
-+	out[0] = out[1] = NULL;
-+ 
-+	for (node = rb_first(root); node != NULL && found < 2; node = rb_next(node)) {
-+		struct extent_node *en = rb_entry(node, struct extent_node, rb);
-+ 
-+		if (extent_pte_is_adjacent(en->ex, phys_addr))
-+			out[found++] = en;
-+	}
-+	return found;
++static int extent_rb_find_all_adjacent(struct rb_root *root, unsigned long phys_addr,   struct extent_node *out[2]){
++    int found = 0;
++
++    out[0] = out[1] = NULL;
++
++    /* Left neighbor: extent whose ending_phys_addr == phys_addr - 1 */
++    out[found] = extent_rb_find_left_neighbor(root, phys_addr);
++    if (out[found])
++        found++;
++
++    /* Right neighbor: extent whose starting_phys_addr == phys_addr + 1 */
++    out[found] = extent_rb_find_by_start(root, phys_addr + 1);
++    if (out[found])
++        found++;
++
++    return found;
 +}
 +
 +/* THIS IS CALLED WHEN PAGE FAULT OCCURS
@@ -621,19 +663,26 @@
 +}
 +
 +/* helper for extent_rb_insert_or_add
-+ * checks every node if new page is in between start and end
++ * checks every relevant node if new page is in between start and end
 + * uses Angelos helper function extent_pte_containts */
-+static struct extent_node *extent_rb_find_containing(struct rb_root *root, unsigned long phys_addr)
-+{
-+	struct rb_node *node;
++static struct extent_node *extent_rb_find_containing(struct rb_root *root, unsigned long phys_addr){
++        struct rb_node *node = root->rb_node;
++        struct extent_node *best = NULL;
 +
-+	for (node = rb_first(root); node != NULL; node = rb_next(node)) {
-+		struct extent_node *en = rb_entry(node, struct extent_node, rb);
++        //binary walk
++        while (node) {
++                struct extent_node *en = rb_entry(node, struct extent_node, rb);
++                if (en->ex->starting_phys_addr <= phys_addr) {
++                        best = en;
++                        node = node->rb_right;
++                } else {
++                        node = node->rb_left;
++                }
++        }
 +
-+		if (extent_pte_contains(en->ex, phys_addr))
-+			return en;
-+	}
-+	return NULL;
++        if (best && phys_addr <= best->ex->ending_phys_addr)
++                return best;
++        return NULL;
 +}
 +
 +/* CALLED WHENEVER A PAGE IS FREED
