@@ -136,7 +136,7 @@
 +}
 --- a/mm/memory.c	2026-04-12 00:10:39.649029348 +0000
 +++ b/mm/memory.c	2026-04-14 03:09:26.652430565 +0000
-@@ -1323,6 +1323,9 @@
+@@ -1301,6 +1301,9 @@
  	return !details->check_mapping;
  }
  
@@ -146,7 +146,7 @@
  static unsigned long zap_pte_range(struct mmu_gather *tlb,
  				struct vm_area_struct *vma, pmd_t *pmd,
  				unsigned long addr, unsigned long end,
-@@ -1355,6 +1358,10 @@
+@@ -1333,6 +1336,10 @@
  			struct page *page;
  
  			page = vm_normal_page(vma, addr, ptent);
@@ -157,7 +157,7 @@
  			if (unlikely(details) && page) {
  				/*
  				 * unmap_shared_mapping_pages() wants to
-@@ -3778,6 +3785,643 @@
+@@ -4608,6 +4615,643 @@
  	return ret;
  }
  
@@ -850,7 +850,7 @@
  /*
   * We enter with non-exclusive mmap_lock (to exclude vma changes,
   * but allow concurrent faults), and pte mapped but not yet locked.
-@@ -3882,6 +4526,9 @@
+@@ -3810,6 +4454,9 @@
  
  	/* No need to invalidate - it was non-present before */
  	update_mmu_cache(vma, vmf->address, vmf->pte);
