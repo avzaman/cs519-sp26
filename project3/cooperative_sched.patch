@@ -1,0 +1,80 @@
+--- a/include/linux/sched.h	2026-05-05 09:57:13.884664057 -0600
++++ b/include/linux/sched.h	2026-05-05 09:59:28.034494888 -0600
+@@ -728,7 +728,7 @@
+ 	/* saved state for "spinlock sleepers" */
+ 	unsigned int			saved_state;
+ #endif
+-
++	int inactive; // PROJECT 3 FUNCTIONALITY 
+ 	/*
+ 	 * This begins the randomizable portion of task_struct. Only
+ 	 * scheduling-critical items should be added above here.
+--- a/include/linux/syscalls.h	2026-05-05 10:08:43.746078948 -0600
++++ b/include/linux/syscalls.h	2026-05-05 10:10:00.007120707 -0600
+@@ -708,6 +708,7 @@
+ 				struct __kernel_timespec __user *interval);
+ asmlinkage long sys_sched_rr_get_interval_time32(pid_t pid,
+ 						 struct old_timespec32 __user *interval);
++asmlinkage long sys_set_inactive(void); // PROJECT 3 FUNCTIONALITY
+ 
+ /* kernel/signal.c */
+ asmlinkage long sys_restart_syscall(void);
+--- a/kernel/sched/core.c	2026-05-05 10:11:07.608044639 -0600
++++ b/kernel/sched/core.c	2026-05-05 10:13:04.013636607 -0600
+@@ -11003,3 +11003,22 @@
+ {
+         trace_sched_update_nr_running_tp(rq, count);
+ }
++
++SYSCALL_DEFINE0(set_inactive)
++{
++    struct task_struct *task = current;
++    struct rq_flags rf;
++    struct rq *rq;
++
++    if (!task->inactive) {
++        task->inactive = 1;
++    } else {
++	// reset vruntime after inactive inflation 
++        rq = task_rq_lock(task, &rf);
++        task->se.vruntime = rq->cfs.min_vruntime;
++        task->inactive = 0;
++        task_rq_unlock(rq, task, &rf);
++    }
++
++    return 0;
++}
+--- a/kernel/sched/fair.c	2026-05-05 10:13:20.149857372 -0600
++++ b/kernel/sched/fair.c	2026-05-05 10:15:51.347927147 -0600
+@@ -22,6 +22,9 @@
+  */
+ #include "sched.h"
+ 
++// PROJECT 3 VRUNTIME INFLATE VAL
++#define INACTIVE_PENALTY_NS (10ULL * NSEC_PER_SEC)
++
+ /*
+  * Targeted preemption latency for CPU-bound tasks:
+  *
+@@ -4780,6 +4783,11 @@
+ 	if (prev->on_rq) {
+ 		update_stats_wait_start(cfs_rq, prev);
+ 		/* Put 'current' back into the tree. */
++		
++		// PROJECT 3 INFLATE VRUNTIME BEFORE UNQUEUE
++		if (task_of(prev)->inactive)
++    			prev->vruntime += INACTIVE_PENALTY_NS;
++
+ 		__enqueue_entity(cfs_rq, prev);
+ 		/* in !on_rq case, update occurred at dequeue */
+ 		update_load_avg(cfs_rq, prev, 0);
+--- a/arch/x86/entry/syscalls/syscall_64.tbl	2026-05-05 10:00:03.738982457 -0600
++++ b/arch/x86/entry/syscalls/syscall_64.tbl	2026-05-05 10:00:59.031737764 -0600
+@@ -370,6 +370,7 @@
+ 446	common	landlock_restrict_self	sys_landlock_restrict_self
+ 447	common	memfd_secret		sys_memfd_secret
+ 448	common	process_mrelease	sys_process_mrelease
++449	common	set_inactive		sys_set_inactive
+ 
+ #
+ # Due to a historical design error, certain syscalls are numbered differently
