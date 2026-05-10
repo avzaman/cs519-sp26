@@ -1,0 +1,63 @@
+--- a/include/linux/sched.h	2026-05-10 17:31:16.598448891 -0600
++++ b/include/linux/sched.h	2026-05-10 17:32:24.975771444 -0600
+@@ -729,6 +729,8 @@
+ 	unsigned int			saved_state;
+ #endif
+ 	int inactive; // PROJECT 3 FUNCTIONALITY 
++	u64 inactive_penalty; // PROJECT 3 PENALTY
++
+ 	/*
+ 	 * This begins the randomizable portion of task_struct. Only
+ 	 * scheduling-critical items should be added above here.
+--- a/include/linux/syscalls.h	2026-05-10 17:32:36.948003025 -0600
++++ b/include/linux/syscalls.h	2026-05-10 17:33:11.996681022 -0600
+@@ -708,7 +708,7 @@
+ 				struct __kernel_timespec __user *interval);
+ asmlinkage long sys_sched_rr_get_interval_time32(pid_t pid,
+ 						 struct old_timespec32 __user *interval);
+-asmlinkage long sys_set_inactive(void); // PROJECT 3 FUNCTIONALITY
++asmlinkage long sys_set_inactive(int penalty_secs); // PROJECT 3 FUNCTIONALITY
+ 
+ /* kernel/signal.c */
+ asmlinkage long sys_restart_syscall(void);
+--- a/kernel/sched/core.c	2026-05-10 17:33:24.800928719 -0600
++++ b/kernel/sched/core.c	2026-05-10 17:34:24.318080150 -0600
+@@ -11004,16 +11004,16 @@
+         trace_sched_update_nr_running_tp(rq, count);
+ }
+ 
+-SYSCALL_DEFINE0(set_inactive)
++SYSCALL_DEFINE1(set_inactive, int, penalty_secs)
+ {
+     struct task_struct *task = current;
+     struct rq_flags rf;
+     struct rq *rq;
+ 
+     if (!task->inactive) {
++        task->inactive_penalty = (u64)penalty_secs * NSEC_PER_SEC;
+         task->inactive = 1;
+     } else {
+-	// reset vruntime after inactive inflation 
+         rq = task_rq_lock(task, &rf);
+         task->se.vruntime = rq->cfs.min_vruntime;
+         task->inactive = 0;
+--- a/kernel/sched/fair.c	2026-05-10 17:34:57.546723060 -0600
++++ b/kernel/sched/fair.c	2026-05-10 17:36:01.519960918 -0600
+@@ -22,8 +22,6 @@
+  */
+ #include "sched.h"
+ 
+-// PROJECT 3 VRUNTIME INFLATE VAL
+-#define INACTIVE_PENALTY_NS (10ULL * NSEC_PER_SEC)
+ 
+ /*
+  * Targeted preemption latency for CPU-bound tasks:
+@@ -4786,7 +4784,7 @@
+ 		
+ 		// PROJECT 3 INFLATE VRUNTIME BEFORE UNQUEUE
+ 		if (task_of(prev)->inactive)
+-    			prev->vruntime += INACTIVE_PENALTY_NS;
++    			prev->vruntime += task_of(prev)->inactive_penalty; 
+ 
+ 		__enqueue_entity(cfs_rq, prev);
+ 		/* in !on_rq case, update occurred at dequeue */
