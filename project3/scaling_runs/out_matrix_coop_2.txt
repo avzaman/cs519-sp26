@@ -1,0 +1,2 @@
+mode=default N=10000 threads=16
+time_seconds=517.427 gflops=3.87 involuntary_switches=34205

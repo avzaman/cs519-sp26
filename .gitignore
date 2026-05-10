@@ -5,6 +5,7 @@ project1/linux-5.15.0/**
 *.data
 project3/linux-5.15.0
 project2/linux-5.15.0
+venv/
 
 !project1/linux-5.15.0/kernel
 

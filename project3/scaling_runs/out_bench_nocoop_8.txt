@@ -1,0 +1,10 @@
+mode=default threads=8
+thread=0 tid=3556 iterations=389413041 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=19653
+thread=1 tid=3557 iterations=400924409 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=12004
+thread=2 tid=3558 iterations=403817531 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=11558
+thread=3 tid=3559 iterations=418089408 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=21859
+thread=4 tid=3560 iterations=400483534 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=12154
+thread=5 tid=3561 iterations=415718031 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=11491
+thread=6 tid=3562 iterations=411780158 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=10751
+thread=7 tid=3563 iterations=390170225 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=12995
+total_iterations=3230396337 total_cpu_ms=-0.00

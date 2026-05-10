@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include <signal.h>
 #include <sys/syscall.h>
 #include <stdatomic.h>
+#include <sched.h>
 
 #define SYS_SET_INACTIVE  449
 #define VECTOR_SIZE       256
@@ -91,10 +93,17 @@ static void *spin_thread(void *arg)
 
 int main(int argc, char *argv[])
 {
-    if (argc > 1 && strcmp(argv[1], "--cooperative") == 0)
-        cooperative = 1;
+    static int spinner_threads = -1;   /* -1 means use all CPUs */
+    for (int i = 1; i < argc; i++) {
+    	if (strcmp(argv[i], "--cooperative") == 0)
+        	cooperative = 1;
+    	else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc)
+        	spinner_threads = atoi(argv[++i]);
+    }
 
-    num_threads = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	if (spinner_threads < 1)
+    		spinner_threads = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	num_threads = spinner_threads;
 
     /* register signal handler so SIGTERM from the script triggers a clean exit */
     struct sigaction sa = { .sa_handler = sigterm_handler, .sa_flags = 0 };
@@ -107,10 +116,17 @@ int main(int argc, char *argv[])
 
     printf("mode=%s threads=%d\n", cooperative ? "cooperative" : "default", num_threads);
 
-    for (int i = 0; i < num_threads; i++) {
-        args[i].idx = i;
-        pthread_create(&threads[i], NULL, spin_thread, &args[i]);
-    }
+	for (int i = 0; i < num_threads; i++) {
+    		args[i].idx = i;
+    		pthread_create(&threads[i], NULL, spin_thread, &args[i]);
+
+    		/* pin thread i to logical CPU i so the distribution is deterministic */
+    		cpu_set_t cpuset;
+    		CPU_ZERO(&cpuset);
+    		CPU_SET(i, &cpuset);
+    		pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
+	}
+
 
     /* run indefinitely until SIGTERM or SIGINT; sleep(1) loop avoids busy-waiting in main */
     while (!atomic_load(&stop_flag))

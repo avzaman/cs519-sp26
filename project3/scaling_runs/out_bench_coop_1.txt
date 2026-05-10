@@ -1,0 +1,3 @@
+mode=cooperative threads=1
+thread=0 tid=2929 iterations=229543034 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=2405
+total_iterations=229543034 total_cpu_ms=-0.00

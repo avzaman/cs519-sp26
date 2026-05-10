@@ -1,0 +1,6 @@
+mode=default threads=4
+thread=0 tid=3406 iterations=356617284 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=13563
+thread=1 tid=3407 iterations=347060098 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=6631
+thread=2 tid=3408 iterations=351348436 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=6322
+thread=3 tid=3409 iterations=354748031 vruntime_ms=-1.00 sum_exec_ms=-0.00 involuntary_switches=15241
+total_iterations=1409773849 total_cpu_ms=-0.00
