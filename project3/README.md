@@ -26,13 +26,19 @@ patch --dry-run -p1 -d linux-5.15.0 < cooperative_sched.patch
 - `kernel/sched/core.c` — implements `sys_set_inactive`
 - `kernel/sched/fair.c` — adds vruntime penalty in `put_prev_entity`
 
-## Rebuilding the Kernel
+## Patch 2 — Variable Penalty
 
-After applying the patch, rebuild and install from the kernel source root:
+Extends the system call to accept a penalty duration in seconds, enabling
+runtime tuning of the vruntime penalty without recompiling the kernel.
+Apply on top of Patch 1.
 
 ```bash
-make -j$(nproc)
-sudo make modules_install
-sudo make install
-sudo reboot
+patch -p1 -d linux-5.15.0 < cooperative_sched_p2.patch
 ```
+
+### Kernel Files Modified
+- `include/linux/sched.h` — adds `inactive_penalty` field to `task_struct`
+- `include/linux/syscalls.h` — updates prototype to `sys_set_inactive(int penalty_secs)`
+- `kernel/sched/core.c` — stores penalty in `task_struct` on deactivation
+- `kernel/sched/fair.c` — reads per-task penalty instead of hardcoded constant
+

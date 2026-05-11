@@ -15,6 +15,7 @@
 static int        cooperative = 0;
 static int        num_threads;
 static atomic_int stop_flag   = 0;
+static int penalty_secs = 10;
 
 typedef struct {
     int    idx;
@@ -69,7 +70,7 @@ static void *spin_thread(void *arg)
     if (cooperative)
         /* mark inactive: put_prev_entity will add INACTIVE_PENALTY_NS to vruntime
          * on every preemption, pushing this thread to the back of the CFS tree */
-        syscall(SYS_SET_INACTIVE);
+        syscall(SYS_SET_INACTIVE, penalty_secs);
 
     long count = 0;
     while (!atomic_load(&stop_flag)) {
@@ -83,7 +84,7 @@ static void *spin_thread(void *arg)
 
     if (cooperative)
         /* reactivate: syscall resets vruntime to min_vruntime, clears inactive flag */
-        syscall(SYS_SET_INACTIVE);
+        syscall(SYS_SET_INACTIVE, penalty_secs);
 
     targ->sum_exec_ns         = read_sched_field(targ->tid, "sum_exec_runtime");
     targ->involuntary_switches = (long)read_sched_field(targ->tid, "nr_involuntary_switches");
@@ -99,6 +100,8 @@ int main(int argc, char *argv[])
         	cooperative = 1;
     	else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc)
         	spinner_threads = atoi(argv[++i]);
+	else if (strcmp(argv[i], "--penalty") == 0 && i + 1 < argc)
+    		penalty_secs = atoi(argv[++i]);
     }
 
 	if (spinner_threads < 1)
@@ -114,7 +117,8 @@ int main(int argc, char *argv[])
     pthread_t    *threads = malloc(num_threads * sizeof(pthread_t));
     thread_arg_t *args    = calloc(num_threads, sizeof(thread_arg_t));
 
-    printf("mode=%s threads=%d\n", cooperative ? "cooperative" : "default", num_threads);
+    printf("mode=%s threads=%d penalty_secs=%d\n",
+       cooperative ? "cooperative" : "default", num_threads, penalty_secs);
 
 	for (int i = 0; i < num_threads; i++) {
     		args[i].idx = i;

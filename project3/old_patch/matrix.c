@@ -13,6 +13,7 @@
 static int    N           = DEFAULT_N;
 static int    num_threads;
 static int    cooperative = 0;
+static int penalty_secs = 10;
 
 /* flat row-major heap arrays; A[i][j] = A[i*N+j]
  * heap allocation required: four 10000x10000 float arrays = ~1.6GB total */
@@ -99,7 +100,7 @@ static void *thread_func(void *arg)
      * so it deprioritizes this thread in favor of any other active process
      * (e.g., the spinning benchmark running concurrently) */
     if (cooperative)
-        syscall(SYS_SET_INACTIVE);
+        syscall(SYS_SET_INACTIVE, penalty_secs);
 
     /* record involuntary switches after work completes as a measure of
      * how much the scheduler preempted this thread during computation */
@@ -112,6 +113,8 @@ int main(int argc, char *argv[])
     /* parse arguments: optional matrix size and --cooperative flag */
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--cooperative") == 0) cooperative = 1;
+	else if (strcmp(argv[i], "--penalty") == 0 && i + 1 < argc)
+    		penalty_secs = atoi(argv[++i]);
         else N = atoi(argv[i]);
     }
 
